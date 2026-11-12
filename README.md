@@ -12,16 +12,16 @@ Spec:
 -  No free throw percentage. It lists FTM and FTA, but you have to do the math yourself.
 -  Hard to use on a phone. On a phone screen only about 4 columns fit; you have to swipe sideways to see the rest, and the 55 players are split across 3 pages.
 ## What version 1 does
+- No clean way to view stats. The league keeps recording stats the way it does now is hard to find and all over the place.
  - Phone-first stat table. Every player's per-game averages (points, rebounds, steals, blocks, 3s) and free throw percentage, readable on a phone without sideways scrolling.
  - Player cards. Tap a player to see their season on one screen: totals, averages, and FT%.
  - League leaders. Top players in each category, ranked by per-game average.
  - Team filter. Show only one team's players.
  - Data for version 1 is copied in from the LASportsNet stats page. TODO: ask the league if the app can pull stats from their site automatically.
--  Next features (after version 1 is live)
+## Next features (after version 1 is live)
  - Monday Night History tab. The league keeps career stats for every player who has ever played Monday nights (326 players across 14 pages, totals only). The app would show all-time leaders by category, career per-game averages (with a minimum-games rule so a 1-game player can't top the list), and each player's career card.
  - MVP and awards leaders. TODO: look at the league's MVP page and decide what to show.
 ## What version 1 does NOT do 
-- No clean way to view stats. The league keeps recording stats the way it does now is hard to find and all over the place.
 -  No logins or accounts. Anyone with the link can view.
 - No schedules, standings, or playoff brackets.
 - No phone app. It's a website that works on a phone browser.
