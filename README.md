@@ -20,7 +20,7 @@ Spec:
 -  Next features (after version 1 is live)
  - Monday Night History tab. The league keeps career stats for every player who has ever played Monday nights (326 players across 14 pages, totals only). The app would show all-time leaders by category, career per-game averages (with a minimum-games rule so a 1-game player can't top the list), and each player's career card.
  - MVP and awards leaders. TODO: look at the league's MVP page and decide what to show.
-## What version 1 does NOT do# 
+## What version 1 does NOT do 
 - No clean way to view stats. The league keeps recording stats the way it does now is hard to find and all over the place.
 -  No logins or accounts. Anyone with the link can view.
 - No schedules, standings, or playoff brackets.
