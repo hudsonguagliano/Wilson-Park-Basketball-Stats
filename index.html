@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- This line makes the page fit phone screens -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Wilson Park Basketball</title>
+
+  <!-- ============ STYLE: how the page looks ============ -->
+  <style>
+    body {
+      margin: 0;
+      padding: 16px;
+      padding-bottom: 90px; /* room so the tab bar doesn't cover content */
+      font-family: -apple-system, system-ui, Arial, sans-serif;
+      background: #f2f3f5;
+      color: #1d1f23;
+    }
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      color: #666;
+      margin: 0 0 20px;
+    }
+
+    /* ---- Home page ---- */
+    .logo {
+      display: block;
+      width: 200px;
+      max-width: 70%; /* shrinks on very small screens */
+      margin: 32px auto 20px; /* "auto" centers it */
+    }
+    .center {
+      text-align: center;
+    }
+
+    /* ---- "Coming soon" pages ---- */
+    .coming-soon {
+      text-align: center;
+      color: #888;
+      margin-top: 80px;
+      font-size: 1.2rem;
+    }
+
+    /* ---- Season Leaders cards ---- */
+    /* 1 column on phones, more columns on wider screens */
+    #leaders {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .card h2 {
+      font-size: 1.1rem;
+      margin: 0 0 12px;
+      color: #c2410c; /* basketball orange */
+    }
+    .card ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .card li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid #eee;
+    }
+    .card li:first-child {
+      border-top: none;
+    }
+    .rank {
+      width: 20px;
+      font-weight: bold;
+      color: #999;
+    }
+    .who {
+      flex: 1; /* takes up the leftover space in the row */
+    }
+    .team {
+      display: block;
+      font-size: 0.8rem;
+      color: #777;
+    }
+    .value {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+    .note {
+      font-size: 0.8rem;
+      color: #777;
+      margin: 10px 0 0;
+    }
+
+    /* ---- Tab bar along the bottom ---- */
+    .tab-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      background: white;
+      border-top: 1px solid #ddd;
+      padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone home bar */
+    }
+    .tab-bar button {
+      flex: 1; /* each tab gets equal width */
+      padding: 14px 4px;
+      border: none;
+      background: none;
+      font-size: 0.8rem;
+      color: #777;
+      cursor: pointer;
+    }
+    .tab-bar button.active {
+      color: #c2410c;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ CONTENT: the 4 pages ============ -->
+  <!-- Only one page shows at a time. "hidden" hides a page. -->
+
+  <!-- Page 1: Home -->
+  <section id="home">
+    <img class="logo" src="logo.svg" alt="Wilson Park Monday Night Hoops logo">
+    <h1 class="center">Wilson Park Basketball</h1>
+    <p class="subtitle center">Monday Men's League · Fall 2026</p>
+  </section>
+
+  <!-- Page 2: Season Leaders -->
+  <section id="season" hidden>
+    <h1>Season Leaders</h1>
+    <p class="subtitle">Top 5 per game · Fall 2026</p>
+    <!-- The JavaScript below fills this empty box with leader cards -->
+    <div id="leaders"></div>
+  </section>
+
+  <!-- Page 3: All-Time Leaders -->
+  <section id="alltime" hidden>
+    <h1>All-Time Leaders</h1>
+    <p class="coming-soon">Coming soon</p>
+  </section>
+
+  <!-- Page 4: Schedule -->
+  <section id="schedule" hidden>
+    <h1>Schedule</h1>
+    <p class="coming-soon">Coming soon</p>
+  </section>
+
+  <!-- The tab bar. data-page says which page each tab opens. -->
+  <nav class="tab-bar">
+    <button data-page="home" class="active">Home</button>
+    <button data-page="season">Season Leaders</button>
+    <button data-page="alltime">All-Time Leaders</button>
+    <button data-page="schedule">Schedule</button>
+  </nav>
+
+  <!-- Load the player data first (from players.js) -->
+  <script src="players.js"></script>
+
+  <!-- ============ LOGIC ============ -->
+  <script>
+    // ---------- Part 1: switching tabs ----------
+    const tabs = document.querySelectorAll(".tab-bar button");
+    const pages = document.querySelectorAll("section");
+
+    for (const tab of tabs) {
+      tab.addEventListener("click", () => {
+        // Hide every page, then show the one this tab points to
+        for (const page of pages) {
+          page.hidden = page.id !== tab.dataset.page;
+        }
+        // Highlight only the tab that was tapped
+        for (const t of tabs) {
+          t.classList.toggle("active", t === tab);
+        }
+        window.scrollTo(0, 0); // start each page at the top
+      });
+    }
+
+    // ---------- Part 2: building the Season Leaders ----------
+
+    // How many players to show in each category
+    const TOP_N = 5;
+
+    // A player needs at least this many free throw attempts to be ranked in FT%
+    const MIN_FTA = 10;
+
+    // The categories to show. "stat" is the name used in players.js.
+    const categories = [
+      { title: "Points",       stat: "pts" },
+      { title: "Rebounds",     stat: "reb" },
+      { title: "Steals",       stat: "stl" },
+      { title: "Blocks",       stat: "blk" },
+      { title: "3-Pointers",   stat: "threes" },
+      { title: "Free Throw %", stat: "ft" },  // special: calculated from ftm and fta
+    ];
+
+    const leadersBox = document.getElementById("leaders");
+
+    // Skip anyone with 0 games, so we never divide by zero
+    const activePlayers = players.filter(p => p.gp > 0);
+
+    for (const category of categories) {
+      // Step 1: work out each player's number for this category
+      let rows = [];
+      for (const p of activePlayers) {
+        if (category.stat === "ft") {
+          if (p.fta < MIN_FTA) continue; // not enough attempts, skip
+          rows.push({ player: p, value: p.ftm / p.fta * 100 });
+        } else {
+          rows.push({ player: p, value: p[category.stat] / p.gp }); // per-game average
+        }
+      }
+
+      // Step 2: sort highest first, keep the top few
+      rows.sort((a, b) => b.value - a.value);
+      rows = rows.slice(0, TOP_N);
+
+      // Step 3: build the HTML for this card
+      let listHTML = "";
+      rows.forEach((row, i) => {
+        const shown = category.stat === "ft"
+          ? row.value.toFixed(1) + "%"   // e.g. 75.0%
+          : row.value.toFixed(1);        // e.g. 16.0
+        listHTML += `
+          <li>
+            <span class="rank">${i + 1}</span>
+            <span class="who">${row.player.name}<span class="team">${row.player.team}</span></span>
+            <span class="value">${shown}</span>
+          </li>`;
+      });
+
+      const note = category.stat === "ft"
+        ? `<p class="note">Minimum ${MIN_FTA} free throw attempts.</p>`
+        : "";
+
+      leadersBox.innerHTML += `
+        <div class="card">
+          <h2>${category.title}</h2>
+          <ol>${listHTML}</ol>
+          ${note}
+        </div>`;
+    }
+  </script>
+</body>
+</html>
