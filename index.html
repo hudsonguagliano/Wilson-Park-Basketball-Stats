@@ -36,6 +36,32 @@
       text-align: center;
     }
 
+    /* Home background: orange fading to dark, with faint court lines.
+       Only used while the Home tab is open (body gets the "on-home" class). */
+    body.on-home {
+      background: #111214;
+    }
+    body.on-home::before {
+      content: "";
+      position: fixed; /* stays put and fills the whole screen */
+      inset: 0;
+      z-index: -1;     /* sits behind everything */
+      background:
+        /* faint white half-court lines (drawn as a small SVG picture) */
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 470' fill='none' stroke='white' stroke-opacity='0.12' stroke-width='3'%3E%3Crect x='2' y='2' width='496' height='466'/%3E%3Cpath d='M190 2a60 60 0 0 0 120 0'/%3E%3Crect x='170' y='280' width='160' height='188'/%3E%3Ccircle cx='250' cy='280' r='60'/%3E%3Cpath d='M30 468V328A237.5 237.5 0 0 1 470 328V468'/%3E%3Cpath d='M220 430h60'/%3E%3Ccircle cx='250' cy='417.5' r='7.5'/%3E%3C/svg%3E")
+          center bottom 70px / min(92vw, 520px) auto no-repeat,
+        /* orange at the top blending into dark at the bottom */
+        linear-gradient(to bottom, #c2410c 0%, #7c2d12 35%, #1d1f23 70%, #111214 100%);
+    }
+    body.on-home h1 {
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+    body.on-home .subtitle {
+      color: #f3f4f6;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+
     /* ---- "Coming soon" pages ---- */
     .coming-soon {
       text-align: center;
@@ -126,7 +152,7 @@
     }
   </style>
 </head>
-<body>
+<body class="on-home">
 
   <!-- ============ CONTENT: the 4 pages ============ -->
   <!-- Only one page shows at a time. "hidden" hides a page. -->
@@ -185,6 +211,8 @@
         for (const t of tabs) {
           t.classList.toggle("active", t === tab);
         }
+        // Use the dark court background only on the Home page
+        document.body.classList.toggle("on-home", tab.dataset.page === "home");
         window.scrollTo(0, 0); // start each page at the top
       });
     }
