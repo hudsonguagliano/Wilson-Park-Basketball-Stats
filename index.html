@@ -138,7 +138,7 @@
 
     /* ---- Season Leaders cards ---- */
     /* 1 column on phones, more columns on wider screens */
-    #leaders {
+    .leaders-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
@@ -190,6 +190,60 @@
       font-size: 0.8rem;
       color: #777;
       margin: 10px 0 0;
+    }
+
+    /* ---- Tappable All-Time cards ---- */
+    .card-tap {
+      cursor: pointer;
+    }
+    .card-tap:active {
+      background: #f6f6f7;
+    }
+    .card-tap:focus-visible {
+      outline: 3px solid #f97316;
+      outline-offset: 2px;
+    }
+    /* Title on the left, small arrow on the right */
+    .card-tap h2 {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .card-arrow {
+      flex: none;
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ---- Full ranked list (opened by tapping a card) ---- */
+    .back-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin: 0 0 16px;
+      padding: 10px 14px 10px 8px;
+      border: none;
+      border-radius: 10px;
+      background: white;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      font: inherit;
+      font-weight: bold;
+      color: #c2410c;
+      cursor: pointer;
+    }
+    .back-button svg {
+      width: 18px;
+      height: 18px;
+    }
+    .full-list .rank {
+      width: 30px; /* room for 3-digit ranks like 100 */
+      flex: none;
+    }
+    /* Long names wrap onto a second line instead of pushing sideways */
+    .full-list .who {
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
 
     /* ---- Tab bar along the bottom ---- */
@@ -261,13 +315,27 @@
     <h1>Season Leaders</h1>
     <p class="subtitle">Top 5 per game · Fall 2026</p>
     <!-- The JavaScript below fills this empty box with leader cards -->
-    <div id="leaders"></div>
+    <div id="leaders" class="leaders-grid"></div>
   </section>
 
   <!-- Page 3: All-Time Leaders -->
   <section id="alltime" hidden>
-    <h1>All-Time Leaders</h1>
-    <p class="coming-soon">Coming soon</p>
+    <!-- View 1: the top-ten cards -->
+    <div id="alltime-cards">
+      <h1>All-Time Leaders</h1>
+      <p class="subtitle">Top 10 · All seasons · Tap a card for the full list</p>
+      <!-- The JavaScript below fills this empty box with leader cards -->
+      <div id="alltime-leaders" class="leaders-grid"></div>
+    </div>
+
+    <!-- View 2: the full ranked list for one category (filled in on tap) -->
+    <div id="alltime-full" hidden>
+      <button class="back-button" id="alltime-back" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Back
+      </button>
+      <div class="card full-list" id="alltime-full-card"></div>
+    </div>
   </section>
 
   <!-- Page 4: Schedule -->
@@ -286,6 +354,7 @@
 
   <!-- Load the player data first (from players.js) -->
   <script src="players.js"></script>
+  <script src="alltime.js"></script>
 
   <!-- ============ LOGIC ============ -->
   <script>
@@ -305,6 +374,8 @@
       }
       // Use the dark background only on the Home page
       document.body.classList.toggle("on-home", pageId === "home");
+      // Opening All-Time Leaders always starts on the cards, not a full list
+      if (pageId === "alltime") showAllTimeCards();
       window.scrollTo(0, 0); // start each page at the top
     }
 
@@ -313,70 +384,167 @@
       button.addEventListener("click", () => showPage(button.dataset.page));
     }
 
-    // ---------- Part 2: building the Season Leaders ----------
+    // ---------- Part 2: ranking players and building leader cards ----------
+    //
+    // Each category says how to work out a player's number:
+    //   stat   = which stat from the data file (or "ft" / "stocks", see below)
+    //   per    = "game" to divide by games played, "total" to use the raw total
+    //   minGp  = (optional) fewest games played needed to be ranked
+    //   minFta = (FT% only) fewest free throw attempts needed to be ranked
 
-    // How many players to show in each category
-    const TOP_N = 5;
-
-    // A player needs at least this many free throw attempts to be ranked in FT%
-    const MIN_FTA = 9;
-
-    // The categories to show. "stat" is the name used in players.js.
-    const categories = [
-      { title: "Points",       stat: "pts" },
-      { title: "Rebounds",     stat: "reb" },
-      { title: "Steals",       stat: "stl" },
-      { title: "Blocks",       stat: "blk" },
-      { title: "3-Pointers",   stat: "threes" },
-      { title: "Free Throw %", stat: "ft" },  // special: calculated from ftm and fta
-    ];
-
-    const leadersBox = document.getElementById("leaders");
-
-    // Skip anyone with 0 games, so we never divide by zero
-    const activePlayers = players.filter(p => p.gp > 0);
-
-    for (const category of categories) {
-      // Step 1: work out each player's number for this category
-      let rows = [];
-      for (const p of activePlayers) {
-        if (category.stat === "ft") {
-          if (p.fta < MIN_FTA) continue; // not enough attempts, skip
-          rows.push({ player: p, value: p.ftm / p.fta * 100 });
-        } else {
-          rows.push({ player: p, value: p[category.stat] / p.gp }); // per-game average
-        }
+    // Work out one player's number for one category.
+    // Returns null if the player shouldn't be ranked in it.
+    function statValue(p, category) {
+      if (category.minGp && p.gp < category.minGp) return null; // too few games
+      if (category.stat === "ft") {
+        if (p.fta < category.minFta) return null; // not enough attempts
+        if (p.ftm > p.fta) return null;           // impossible numbers, leave out
+        return p.ftm / p.fta * 100;
       }
+      const total = category.stat === "stocks"
+        ? p.stl + p.blk            // steals + blocks combined
+        : p[category.stat];
+      return category.per === "game" ? total / p.gp : total;
+    }
 
-      // Step 2: sort highest first, keep the top few
+    // How to show a number: totals as whole numbers, averages with 1 decimal
+    function formatValue(value, category) {
+      if (category.stat === "ft") return value.toFixed(1) + "%"; // e.g. 75.0%
+      if (category.per === "game") return value.toFixed(1);      // e.g. 16.0
+      return String(value);                                       // e.g. 849
+    }
+
+    // Rank EVERY qualifying player in one category, highest first.
+    // The cards show the first few of this list; the full view shows all of it,
+    // so the two always match.
+    function rankCategory(playerList, category) {
+      const rows = [];
+      for (const p of playerList) {
+        if (p.gp <= 0) continue; // skip 0 games, so we never divide by zero
+        const value = statValue(p, category);
+        if (value !== null) rows.push({ player: p, value: value });
+      }
       rows.sort((a, b) => b.value - a.value);
-      rows = rows.slice(0, TOP_N);
+      return rows;
+    }
 
-      // Step 3: build the HTML for this card
-      let listHTML = "";
+    // The <li> rows for a list (rank, name, number)
+    function rowsHTML(rows, category) {
+      let html = "";
       rows.forEach((row, i) => {
-        const shown = category.stat === "ft"
-          ? row.value.toFixed(1) + "%"   // e.g. 75.0%
-          : row.value.toFixed(1);        // e.g. 16.0
-        listHTML += `
+        html += `
           <li>
             <span class="rank">${i + 1}</span>
-            <span class="who">${row.player.name}<span class="team">${row.player.team}</span></span>
-            <span class="value">${shown}</span>
+            <span class="who">${row.player.name}<span class="team">${row.player.team || ""}</span></span>
+            <span class="value">${formatValue(row.value, category)}</span>
           </li>`;
       });
-
-      const note = category.stat === "ft"
-        ? `<p class="note">Minimum ${MIN_FTA} free throw attempts.</p>`
-        : "";
-
-      leadersBox.innerHTML += `
-        <div class="card">
-          <h2>${category.title}</h2>
-          <ol>${listHTML}</ol>
-          ${note}
-        </div>`;
+      return html;
     }
+
+    // The small note under a list explaining who qualifies
+    function noteHTML(category) {
+      const notes = [];
+      if (category.minGp) notes.push(`Minimum ${category.minGp} games`);
+      if (category.minFta) notes.push(`Minimum ${category.minFta} free throw attempts.`);
+      return notes.length ? `<p class="note">${notes.join(" ")}</p>` : "";
+    }
+
+    // A small right-pointing arrow, shown on tappable cards
+    const ARROW_SVG = `<svg class="card-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>`;
+
+    // Fill the box with one card per category, showing the top N players.
+    // If onTap is given, each card gets an arrow and opens onTap(index) when tapped.
+    function buildLeaders(boxId, rankedLists, categories, topN, onTap) {
+      const box = document.getElementById(boxId);
+      categories.forEach((category, index) => {
+        const top = rankedLists[index].slice(0, topN);
+        const tapAttrs = onTap
+          ? `class="card card-tap" role="button" tabindex="0" data-index="${index}" aria-label="${category.title}: see full list"`
+          : `class="card"`;
+        box.innerHTML += `
+          <div ${tapAttrs}>
+            <h2>${category.title}${onTap ? ARROW_SVG : ""}</h2>
+            <ol>${rowsHTML(top, category)}</ol>
+            ${noteHTML(category)}
+          </div>`;
+      });
+
+      if (!onTap) return;
+      // Tap (or Enter / Space on a keyboard) opens that category
+      box.addEventListener("click", (e) => {
+        const card = e.target.closest(".card-tap");
+        if (card) onTap(Number(card.dataset.index));
+      });
+      box.addEventListener("keydown", (e) => {
+        const card = e.target.closest(".card-tap");
+        if (card && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onTap(Number(card.dataset.index));
+        }
+      });
+    }
+
+    // ---------- Part 3: Season Leaders (top 5, per game) ----------
+    const seasonCategories = [
+      { title: "Points",       stat: "pts",    per: "game" },
+      { title: "Rebounds",     stat: "reb",    per: "game" },
+      { title: "Steals",       stat: "stl",    per: "game" },
+      { title: "Blocks",       stat: "blk",    per: "game" },
+      { title: "3-Pointers",   stat: "threes", per: "game" },
+      { title: "Free Throw %", stat: "ft",     minFta: 9 },
+    ];
+    buildLeaders("leaders",
+      seasonCategories.map(c => rankCategory(players, c)),
+      seasonCategories, 5);
+
+    // ---------- Part 4: All-Time Leaders (top 10 + full lists) ----------
+    // Per-game lists only count players with at least this many games
+    const ALLTIME_MIN_GP = 10;
+
+    const allTimeCategories = [
+      { title: "Points",              stat: "pts",    per: "total" },
+      { title: "Points Per Game",     stat: "pts",    per: "game", minGp: ALLTIME_MIN_GP },
+      { title: "Rebounds",            stat: "reb",    per: "total" },
+      { title: "Rebounds Per Game",   stat: "reb",    per: "game", minGp: ALLTIME_MIN_GP },
+      { title: "3-Pointers Made",     stat: "threes", per: "total" },
+      { title: "3-Pointers Per Game", stat: "threes", per: "game", minGp: ALLTIME_MIN_GP },
+      { title: "Free Throw %",        stat: "ft",     minFta: 10 },
+      { title: "Steals + Blocks",     stat: "stocks", per: "total" },
+    ];
+    // Rank each category once; cards and full lists both use these
+    const allTimeRanked = allTimeCategories.map(c => rankCategory(allTimePlayers, c));
+
+    const allTimeCardsView = document.getElementById("alltime-cards");
+    const allTimeFullView = document.getElementById("alltime-full");
+    const allTimeFullCard = document.getElementById("alltime-full-card");
+    let savedScroll = 0; // where the cards were scrolled to, for Back
+
+    // Show the full ranked list for one category
+    function showAllTimeFull(index) {
+      const category = allTimeCategories[index];
+      savedScroll = window.scrollY;
+      allTimeFullCard.innerHTML = `
+        <h2>${category.title}</h2>
+        <ol>${rowsHTML(allTimeRanked[index], category)}</ol>
+        ${noteHTML(category)}`;
+      allTimeCardsView.hidden = true;
+      allTimeFullView.hidden = false;
+      window.scrollTo(0, 0);
+    }
+
+    // Go back to the top-ten cards
+    function showAllTimeCards() {
+      allTimeFullView.hidden = true;
+      allTimeCardsView.hidden = false;
+    }
+
+    document.getElementById("alltime-back").addEventListener("click", () => {
+      showAllTimeCards();
+      window.scrollTo(0, savedScroll); // back to where you were
+    });
+
+    buildLeaders("alltime-leaders", allTimeRanked, allTimeCategories, 10, showAllTimeFull);
   </script>
 </body>
 </html>
