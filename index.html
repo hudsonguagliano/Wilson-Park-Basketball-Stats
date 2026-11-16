@@ -26,40 +26,106 @@
     }
 
     /* ---- Home page ---- */
-    .logo {
-      display: block;
-      width: 200px;
-      max-width: 70%; /* shrinks on very small screens */
-      margin: 32px auto 20px; /* "auto" centers it */
-    }
-    .center {
-      text-align: center;
+    /* Colors used on the Home page and tab bar */
+    :root {
+      --orange: #c2410c;        /* same orange as the logo */
+      --orange-bright: #f97316; /* brighter orange, only for small text on dark */
+      --black: #0b0b0d;
+      --card: #1a1b1f;
+      --card-border: #2a2c31;
+      --gray: #c9cbd1;
     }
 
-    /* Home background: orange fading to dark, with faint court lines.
+    /* Near-black background with a soft orange glow at the top.
        Only used while the Home tab is open (body gets the "on-home" class). */
     body.on-home {
-      background: #111214;
+      background: var(--black);
+      color: #ffffff;
     }
     body.on-home::before {
       content: "";
       position: fixed; /* stays put and fills the whole screen */
       inset: 0;
       z-index: -1;     /* sits behind everything */
-      background:
-        /* faint white half-court lines (drawn as a small SVG picture) */
-        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 470' fill='none' stroke='white' stroke-opacity='0.12' stroke-width='3'%3E%3Crect x='2' y='2' width='496' height='466'/%3E%3Cpath d='M190 2a60 60 0 0 0 120 0'/%3E%3Crect x='170' y='280' width='160' height='188'/%3E%3Ccircle cx='250' cy='280' r='60'/%3E%3Cpath d='M30 468V328A237.5 237.5 0 0 1 470 328V468'/%3E%3Cpath d='M220 430h60'/%3E%3Ccircle cx='250' cy='417.5' r='7.5'/%3E%3C/svg%3E")
-          center bottom 70px / min(92vw, 520px) auto no-repeat,
-        /* orange at the top blending into dark at the bottom */
-        linear-gradient(to bottom, #c2410c 0%, #7c2d12 35%, #1d1f23 70%, #111214 100%);
+      background: radial-gradient(ellipse 100% 55% at 50% 0%,
+        rgba(194, 65, 12, 0.55) 0%, rgba(194, 65, 12, 0.18) 55%, rgba(194, 65, 12, 0) 100%);
     }
-    body.on-home h1 {
+
+    #home {
+      max-width: 520px;
+      margin: 0 auto; /* centered on wide screens */
+    }
+    .logo {
+      display: block;
+      width: 120px;
+      max-width: 40%; /* shrinks on very small screens */
+      margin: 20px auto 24px; /* "auto" centers it */
+    }
+
+    /* Big three-line headline. Size follows the screen width so
+       "MONDAY NIGHT" fills most of the phone without spilling over. */
+    .headline {
+      margin: 0;
+      font-size: clamp(2rem, 11.5vw, 3.75rem);
+      font-weight: 900;
+      line-height: 0.95;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
       color: #ffffff;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
-    body.on-home .subtitle {
-      color: #f3f4f6;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    .headline span {
+      display: block; /* each part on its own line */
+    }
+    .headline .hl-orange {
+      color: var(--orange);
+    }
+
+    .tagline {
+      margin: 18px 0 0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray);
+    }
+    .tag-bar {
+      width: 40px;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--orange);
+      margin: 12px 0 28px;
+    }
+
+    /* The three links to the other tabs */
+    .home-links {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .home-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 20px 18px;
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      color: #ffffff;
+      font: inherit;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+    }
+    .home-link:active {
+      background: #24262b;
+    }
+    .home-link svg {
+      flex: none;
+      width: 20px;
+      height: 20px;
+      color: var(--orange-bright);
     }
 
     /* ---- "Coming soon" pages ---- */
@@ -133,21 +199,24 @@
       left: 0;
       right: 0;
       display: flex;
-      background: white;
-      border-top: 1px solid #ddd;
+      background: #111214;
+      border-top: 1px solid #2a2c31;
       padding-bottom: env(safe-area-inset-bottom, 0px); /* iPhone home bar */
     }
     .tab-bar button {
       flex: 1; /* each tab gets equal width */
       padding: 14px 4px;
       border: none;
+      border-top: 3px solid transparent; /* space for the active line */
       background: none;
+      font: inherit;
       font-size: 0.8rem;
-      color: #777;
+      color: #a1a4ab;
       cursor: pointer;
     }
     .tab-bar button.active {
-      color: #c2410c;
+      color: #f97316;              /* brighter orange so small text is easy to read */
+      border-top-color: #c2410c;   /* logo orange line above the active tab */
       font-weight: bold;
     }
   </style>
@@ -160,8 +229,31 @@
   <!-- Page 1: Home -->
   <section id="home">
     <img class="logo" src="logo.svg" alt="Wilson Park Monday Night Hoops logo">
-    <h1 class="center">Wilson Park Basketball</h1>
-    <p class="subtitle center">Monday Men's League · Fall 2026</p>
+
+    <h1 class="headline">
+      <span>Wilson Park</span>
+      <span class="hl-orange">Monday Night</span>
+      <span>League.</span>
+    </h1>
+
+    <p class="tagline">An app designed by Hudson Guagliano</p>
+    <div class="tag-bar"></div>
+
+    <!-- Each card opens a tab, same as tapping the tab bar -->
+    <div class="home-links">
+      <button class="home-link" data-page="season">
+        Season Leaders
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button class="home-link" data-page="alltime">
+        All-Time Leaders
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+      <button class="home-link" data-page="schedule">
+        Schedule
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
   </section>
 
   <!-- Page 2: Season Leaders -->
@@ -201,20 +293,24 @@
     const tabs = document.querySelectorAll(".tab-bar button");
     const pages = document.querySelectorAll("section");
 
-    for (const tab of tabs) {
-      tab.addEventListener("click", () => {
-        // Hide every page, then show the one this tab points to
-        for (const page of pages) {
-          page.hidden = page.id !== tab.dataset.page;
-        }
-        // Highlight only the tab that was tapped
-        for (const t of tabs) {
-          t.classList.toggle("active", t === tab);
-        }
-        // Use the dark court background only on the Home page
-        document.body.classList.toggle("on-home", tab.dataset.page === "home");
-        window.scrollTo(0, 0); // start each page at the top
-      });
+    // Show one page (by its id) and highlight its tab
+    function showPage(pageId) {
+      // Hide every page, then show the one asked for
+      for (const page of pages) {
+        page.hidden = page.id !== pageId;
+      }
+      // Highlight only the matching tab
+      for (const t of tabs) {
+        t.classList.toggle("active", t.dataset.page === pageId);
+      }
+      // Use the dark background only on the Home page
+      document.body.classList.toggle("on-home", pageId === "home");
+      window.scrollTo(0, 0); // start each page at the top
+    }
+
+    // Tapping a tab, or a card on the Home page, opens that page
+    for (const button of document.querySelectorAll("[data-page]")) {
+      button.addEventListener("click", () => showPage(button.dataset.page));
     }
 
     // ---------- Part 2: building the Season Leaders ----------
