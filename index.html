@@ -320,6 +320,43 @@
     .game .win  { color: #15803d; } /* green */
     .game .lose { color: #b91c1c; } /* red */
 
+    /* Standings table at the top of the Schedule tab (all black text) */
+    .standings {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin: 0 0 20px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      color: #000;
+    }
+    .standings h2 {
+      font-size: 1.15rem;
+      margin: 0 0 8px;
+      color: #000;
+    }
+    .standings table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    .standings th,
+    .standings td {
+      padding: 6px 4px;
+      text-align: center;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    .standings th {
+      font-size: 0.75rem;
+      line-height: 1.1;
+    }
+    .standings tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .standings .team {
+      text-align: left;
+      font-weight: bold;
+    }
+
     /* ---- Tab bar along the bottom ---- */
     .tab-bar {
       position: fixed;
@@ -427,6 +464,22 @@
   <!-- Page 4: Schedule -->
   <section id="schedule" hidden>
     <h1>Schedule</h1>
+    <div class="standings">
+      <h2>Standings (after Week 7)</h2>
+      <table>
+        <thead>
+          <tr><th>Rank</th><th class="team">Team</th><th>W</th><th>L</th><th>Points For</th><th>Points Against</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td class="team">Sniper Elite!</td><td>6</td><td>1</td><td>444</td><td>341</td></tr>
+          <tr><td>2</td><td class="team">Lago Boys</td><td>6</td><td>1</td><td>471</td><td>415</td></tr>
+          <tr><td>3</td><td class="team">MonStars</td><td>5</td><td>2</td><td>444</td><td>395</td></tr>
+          <tr><td>4</td><td class="team">YUNG HOOPAS</td><td>3</td><td>4</td><td>380</td><td>392</td></tr>
+          <tr><td>5</td><td class="team">Xiao Long Ballers</td><td>1</td><td>6</td><td>353</td><td>424</td></tr>
+          <tr><td>6</td><td class="team">K1 MASHERS</td><td>0</td><td>7</td><td>325</td><td>450</td></tr>
+        </tbody>
+      </table>
+    </div>
     <p class="sched-info">Fall 2026 · Mondays</p>
     <p class="sched-info">Dee Hardison Sports Center, 2400 Jefferson St, Torrance</p>
     <p class="sched-updated">Last updated: 11/17/2026</p>
