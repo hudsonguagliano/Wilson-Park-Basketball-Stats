@@ -20,6 +20,7 @@
   writes the table onto the page. It runs every time the page loads,
   so entering a score updates the standings automatically.
 - How to check my data: I compared the site against LASportsNet, and
-  used the Week 8 MVP line to confirm the new stats were in.
+  used the Week 8 MVP line as a cross-check, which caught a 2-point
+  mismatch.
 - To get good results from Claude, I have to be specific about what I
   want, where it goes, and how I'll know it worked.
