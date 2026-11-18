@@ -6,49 +6,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Wilson Park Basketball</title>
 
+  <!-- Apply the saved light/dark choice before the page draws (no flash).
+       Dark is the default; only "light" is ever saved as a change. -->
+  <script>
+    try {
+      if (localStorage.getItem("theme") === "light") {
+        document.documentElement.dataset.theme = "light";
+      }
+    } catch (e) { /* storage blocked: just use dark */ }
+  </script>
+
   <!-- ============ STYLE: how the page looks ============ -->
   <style>
+    /* ---- All the colors, in one place ----
+       Dark mode is the default. Light mode swaps in the values further down. */
+    :root {
+      color-scheme: dark;
+      --orange: #c2410c;        /* same orange as the logo */
+      --orange-bright: #f97316; /* brighter orange, for small text on dark */
+      --bg: #0b0b0d;            /* page background (near-black) */
+      --text: #ffffff;          /* main text */
+      --muted: #a1a4ab;         /* gray text: ranks, teams, notes */
+      --tagline: #c9cbd1;       /* Home tagline */
+      --card: #1a1b1f;
+      --card-border: #2a2c31;
+      --card-active: #24262b;   /* card while being tapped */
+      --card-shadow: 0 0 0 1px #2a2c31; /* thin outline, takes no space */
+      --divider: #2a2c31;       /* lines between rows */
+      --title-orange: #f97316;  /* card titles, Back button, MVP line */
+      --chip-bg: rgba(249, 115, 22, 0.15);
+      --chip-text: #fdba74;
+      --win: #4ade80;           /* green, winning score */
+      --lose: #f87171;          /* red, losing score */
+      --glow-strong: rgba(194, 65, 12, 0.55);
+      --glow-soft: rgba(194, 65, 12, 0.18);
+    }
+    /* Light mode: the original light colors */
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f2f3f5;
+      --text: #1d1f23;
+      --muted: #666;
+      --tagline: #4b4f57;
+      --card: #ffffff;
+      --card-border: #e2e4e8;
+      --card-active: #f6f6f7;
+      --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      --divider: #eee;
+      --title-orange: #c2410c;
+      --chip-bg: #fff1e6;
+      --chip-text: #9a3412;
+      --win: #15803d;
+      --lose: #b91c1c;
+      --glow-strong: rgba(194, 65, 12, 0.22);
+      --glow-soft: rgba(194, 65, 12, 0.07);
+    }
+
     body {
       margin: 0;
       padding: 16px;
+      padding-top: 56px;    /* room for the light/dark button in the corner */
       padding-bottom: 90px; /* room so the tab bar doesn't cover content */
       font-family: -apple-system, system-ui, Arial, sans-serif;
-      background: #f2f3f5;
-      color: #1d1f23;
+      background: var(--bg);
+      color: var(--text);
     }
     h1 {
       font-size: 1.5rem;
       margin: 0 0 4px;
     }
     .subtitle {
-      color: #666;
+      color: var(--muted);
       margin: 0 0 20px;
     }
 
-    /* ---- Home page ---- */
-    /* Colors used on the Home page and tab bar */
-    :root {
-      --orange: #c2410c;        /* same orange as the logo */
-      --orange-bright: #f97316; /* brighter orange, only for small text on dark */
-      --black: #0b0b0d;
-      --card: #1a1b1f;
-      --card-border: #2a2c31;
-      --gray: #c9cbd1;
+    /* ---- Light/dark button (top-right corner, every tab) ---- */
+    .theme-toggle {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--card-border);
+      border-radius: 50%;
+      background: var(--card);
+      color: var(--text);
+      cursor: pointer;
     }
+    .theme-toggle:active {
+      background: var(--card-active);
+    }
+    .theme-toggle:focus-visible {
+      outline: 3px solid #f97316;
+      outline-offset: 2px;
+    }
+    .theme-toggle svg {
+      width: 20px;
+      height: 20px;
+    }
+    /* Dark mode shows the sun (tap for light); light mode shows the moon */
+    .theme-toggle .icon-moon { display: none; }
+    :root[data-theme="light"] .theme-toggle .icon-sun { display: none; }
+    :root[data-theme="light"] .theme-toggle .icon-moon { display: block; }
 
-    /* Near-black background with a soft orange glow at the top.
-       Only used while the Home tab is open (body gets the "on-home" class). */
-    body.on-home {
-      background: var(--black);
-      color: #ffffff;
-    }
+    /* ---- Home page ---- */
+    /* Soft orange glow at the top, only while the Home tab is open
+       (body gets the "on-home" class). */
     body.on-home::before {
       content: "";
       position: fixed; /* stays put and fills the whole screen */
       inset: 0;
       z-index: -1;     /* sits behind everything */
       background: radial-gradient(ellipse 100% 55% at 50% 0%,
-        rgba(194, 65, 12, 0.55) 0%, rgba(194, 65, 12, 0.18) 55%, rgba(194, 65, 12, 0) 100%);
+        var(--glow-strong) 0%, var(--glow-soft) 55%, rgba(194, 65, 12, 0) 100%);
     }
 
     #home {
@@ -71,7 +144,7 @@
       line-height: 0.95;
       letter-spacing: -0.02em;
       text-transform: uppercase;
-      color: #ffffff;
+      color: var(--text);
     }
     .headline span {
       display: block; /* each part on its own line */
@@ -86,7 +159,7 @@
       font-weight: 600;
       letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: var(--gray);
+      color: var(--tagline);
     }
     .tag-bar {
       width: 40px;
@@ -111,7 +184,7 @@
       background: var(--card);
       border: 1px solid var(--card-border);
       border-radius: 14px;
-      color: #ffffff;
+      color: var(--text);
       font: inherit;
       font-size: 1.05rem;
       font-weight: 700;
@@ -119,7 +192,7 @@
       cursor: pointer;
     }
     .home-link:active {
-      background: #24262b;
+      background: var(--card-active);
     }
     .home-link svg {
       flex: none;
@@ -131,7 +204,7 @@
     /* ---- "Coming soon" pages ---- */
     .coming-soon {
       text-align: center;
-      color: #888;
+      color: var(--muted);
       margin-top: 80px;
       font-size: 1.2rem;
     }
@@ -144,15 +217,15 @@
       gap: 16px;
     }
     .card {
-      background: white;
+      background: var(--card);
       border-radius: 12px;
       padding: 16px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--card-shadow);
     }
     .card h2 {
       font-size: 1.1rem;
       margin: 0 0 12px;
-      color: #c2410c; /* basketball orange */
+      color: var(--title-orange); /* basketball orange */
     }
     .card ol {
       list-style: none;
@@ -164,7 +237,7 @@
       align-items: center;
       gap: 10px;
       padding: 8px 0;
-      border-top: 1px solid #eee;
+      border-top: 1px solid var(--divider);
     }
     .card li:first-child {
       border-top: none;
@@ -172,7 +245,7 @@
     .rank {
       width: 20px;
       font-weight: bold;
-      color: #999;
+      color: var(--muted);
     }
     .who {
       flex: 1; /* takes up the leftover space in the row */
@@ -180,7 +253,7 @@
     .team {
       display: block;
       font-size: 0.8rem;
-      color: #777;
+      color: var(--muted);
     }
     .value {
       font-size: 1.25rem;
@@ -188,7 +261,7 @@
     }
     .note {
       font-size: 0.8rem;
-      color: #777;
+      color: var(--muted);
       margin: 10px 0 0;
     }
 
@@ -197,7 +270,7 @@
       cursor: pointer;
     }
     .card-tap:active {
-      background: #f6f6f7;
+      background: var(--card-active);
     }
     .card-tap:focus-visible {
       outline: 3px solid #f97316;
@@ -225,11 +298,11 @@
       padding: 10px 14px 10px 8px;
       border: none;
       border-radius: 10px;
-      background: white;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      background: var(--card);
+      box-shadow: var(--card-shadow);
       font: inherit;
       font-weight: bold;
-      color: #c2410c;
+      color: var(--title-orange);
       cursor: pointer;
     }
     .back-button svg {
@@ -265,14 +338,14 @@
       font-size: 0.78rem;
       padding: 3px 8px;
       border-radius: 999px;
-      background: #fff1e6;
-      color: #9a3412;
+      background: var(--chip-bg);
+      color: var(--chip-text);
     }
 
     /* ---- Schedule ---- */
-    /* Text is black unless it's an MVP (orange) or a final score (green/red) */
+    /* Plain text color unless it's an MVP (orange) or a final score (green/red) */
     #schedule {
-      color: #000;
+      color: var(--text);
     }
     .sched-info {
       margin: 0 0 4px;
@@ -287,22 +360,22 @@
     .sched-week h2 {
       font-size: 1.15rem;
       margin: 0;
-      color: #000;
+      color: var(--text);
     }
     .sched-mvp {
       margin: 2px 0 10px;
       font-weight: bold;
-      color: #c2410c; /* logo orange */
+      color: var(--title-orange); /* orange (brighter in dark mode) */
     }
     .sched-pending {
       margin: 2px 0 10px;
     }
     .game {
-      background: white;
+      background: var(--card);
       border-radius: 12px;
       padding: 12px 14px;
       margin-bottom: 8px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--card-shadow);
     }
     .game-time {
       font-size: 0.8rem;
@@ -317,22 +390,22 @@
     .game-row .score {
       flex: none;
     }
-    .game .win  { color: #15803d; } /* green */
-    .game .lose { color: #b91c1c; } /* red */
+    .game .win  { color: var(--win); }  /* green */
+    .game .lose { color: var(--lose); } /* red */
 
-    /* Standings table at the top of the Schedule tab (all black text) */
+    /* Standings table at the top of the Schedule tab (plain text color) */
     .standings {
-      background: white;
+      background: var(--card);
       border-radius: 12px;
       padding: 12px 14px;
       margin: 0 0 20px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      color: #000;
+      box-shadow: var(--card-shadow);
+      color: var(--text);
     }
     .standings h2 {
       font-size: 1.15rem;
       margin: 0 0 8px;
-      color: #000;
+      color: var(--text);
     }
     .standings table {
       width: 100%;
@@ -343,7 +416,7 @@
     .standings td {
       padding: 6px 4px;
       text-align: center;
-      border-bottom: 1px solid #e5e5e5;
+      border-bottom: 1px solid var(--divider);
     }
     .standings th {
       font-size: 0.75rem;
@@ -387,6 +460,14 @@
   </style>
 </head>
 <body class="on-home">
+
+  <!-- Light/dark button, top-right corner on every tab -->
+  <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light mode">
+    <!-- Sun: shown in dark mode -->
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    <!-- Moon: shown in light mode -->
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
 
   <!-- ============ CONTENT: the 4 pages ============ -->
   <!-- Only one page shows at a time. "hidden" hides a page. -->
@@ -495,6 +576,30 @@
 
   <!-- ============ LOGIC ============ -->
   <script>
+    // ---------- Light / dark mode ----------
+    // Dark is the default. The choice is saved in the browser so the app
+    // opens the same way next time (the snippet in <head> reads it back).
+    const themeButton = document.getElementById("theme-toggle");
+
+    function isLight() {
+      return document.documentElement.dataset.theme === "light";
+    }
+    function updateThemeLabel() {
+      themeButton.setAttribute("aria-label", isLight() ? "Switch to dark mode" : "Switch to light mode");
+    }
+    themeButton.addEventListener("click", () => {
+      if (isLight()) {
+        delete document.documentElement.dataset.theme;
+      } else {
+        document.documentElement.dataset.theme = "light";
+      }
+      try {
+        localStorage.setItem("theme", isLight() ? "light" : "dark");
+      } catch (e) { /* storage blocked: the switch still works for now */ }
+      updateThemeLabel();
+    });
+    updateThemeLabel();
+
     // ---------- Part 1: switching tabs ----------
     const tabs = document.querySelectorAll(".tab-bar button");
     const pages = document.querySelectorAll("section");
@@ -509,7 +614,7 @@
       for (const t of tabs) {
         t.classList.toggle("active", t.dataset.page === pageId);
       }
-      // Use the dark background only on the Home page
+      // Show the orange glow only on the Home page
       document.body.classList.toggle("on-home", pageId === "home");
       // Opening All-Time Leaders always starts on the cards, not a full list
       if (pageId === "alltime") showAllTimeCards();
