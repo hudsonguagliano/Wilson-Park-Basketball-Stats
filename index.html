@@ -269,6 +269,57 @@
       color: #9a3412;
     }
 
+    /* ---- Schedule ---- */
+    /* Text is black unless it's an MVP (orange) or a final score (green/red) */
+    #schedule {
+      color: #000;
+    }
+    .sched-info {
+      margin: 0 0 4px;
+    }
+    .sched-updated {
+      margin: 0 0 20px;
+      font-size: 0.85rem;
+    }
+    .sched-week {
+      margin: 0 0 24px;
+    }
+    .sched-week h2 {
+      font-size: 1.15rem;
+      margin: 0;
+      color: #000;
+    }
+    .sched-mvp {
+      margin: 2px 0 10px;
+      font-weight: bold;
+      color: #c2410c; /* logo orange */
+    }
+    .sched-pending {
+      margin: 2px 0 10px;
+    }
+    .game {
+      background: white;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .game-time {
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+    }
+    .game-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-weight: bold;
+    }
+    .game-row .score {
+      flex: none;
+    }
+    .game .win  { color: #15803d; } /* green */
+    .game .lose { color: #b91c1c; } /* red */
+
     /* ---- Tab bar along the bottom ---- */
     .tab-bar {
       position: fixed;
@@ -376,7 +427,11 @@
   <!-- Page 4: Schedule -->
   <section id="schedule" hidden>
     <h1>Schedule</h1>
-    <p class="coming-soon">Coming soon</p>
+    <p class="sched-info">Fall 2026 · Mondays</p>
+    <p class="sched-info">Dee Hardison Sports Center, 2400 Jefferson St, Torrance</p>
+    <p class="sched-updated">Last updated: 11/17/2026</p>
+    <!-- The JavaScript below fills this box with each week's games -->
+    <div id="schedule-weeks"></div>
   </section>
 
   <!-- The tab bar. data-page says which page each tab opens. -->
@@ -645,6 +700,79 @@
         <h2>League Awards${ARROW_SVG}</h2>
         <ol class="award-list">${awardRowsHTML(3)}</ol>
       </div>`;
+
+    // ---------- Part 5: Schedule ----------
+    //
+    // One entry per week. Each game is [time, team 1, score 1, team 2, score 2].
+    // Leave both scores as null until the game is played; it then shows as
+    // "Team vs Team". The winner (green) and loser (red) are worked out from the scores.
+    const schedule = [
+      { week: 1, date: "9/28/2026", mvp: "Dustin Gratto (MonStars), 20 pts 6 rebs", games: [
+        ["7:00 PM", "MonStars", 64, "Xiao Long Ballers", 44],
+        ["8:00 PM", "Sniper Elite!", 86, "K1 MASHERS", 45],
+        ["9:00 PM", "Lago Boys", 73, "YUNG HOOPAS", 57],
+      ]},
+      { week: 2, date: "10/5/2026", mvp: "Predrag Stevcic (Lago Boys), 16 pts 6 rebs 1 blk", games: [
+        ["7:00 PM", "Lago Boys", 65, "MonStars", 60],
+        ["8:00 PM", "Sniper Elite!", 59, "Xiao Long Ballers", 46],
+        ["9:00 PM", "YUNG HOOPAS", 64, "K1 MASHERS", 42],
+      ]},
+      { week: 3, date: "10/12/2026", mvp: "Bacari Green (MonStars), 26 pts 5 rebs", games: [
+        ["7:00 PM", "MonStars", 59, "K1 MASHERS", 56],
+        ["8:00 PM", "Sniper Elite!", 44, "YUNG HOOPAS", 41],
+        ["9:00 PM", "Lago Boys", 55, "Xiao Long Ballers", 49],
+      ]},
+      { week: 4, date: "10/19/2026", mvp: "Hudson Guagliano (Lago Boys), 30 pts 2 rebs", games: [
+        ["7:00 PM", "MonStars", 55, "YUNG HOOPAS", 52],
+        ["8:00 PM", "Sniper Elite!", 56, "Lago Boys", 60],
+        ["9:00 PM", "K1 MASHERS", 34, "Xiao Long Ballers", 35],
+      ]},
+      { week: 5, date: "10/26/2026", mvp: "Ben Sy (Sniper Elite!), 28 pts 3 rebs", games: [
+        ["7:00 PM", "Lago Boys", 78, "K1 MASHERS", 51],
+        ["8:00 PM", "MonStars", 55, "Sniper Elite!", 76],
+        ["9:00 PM", "Xiao Long Ballers", 47, "YUNG HOOPAS", 49],
+      ]},
+      { week: 6, date: "11/2/2026", mvp: "Nathan Dimacali (Lago Boys), 17 pts 17 rebs 2 stls", games: [
+        ["7:00 PM", "YUNG HOOPAS", 54, "MonStars", 79],
+        ["8:00 PM", "Sniper Elite!", 65, "K1 MASHERS", 45],
+        ["9:00 PM", "Xiao Long Ballers", 84, "Lago Boys", 91],
+      ]},
+      { week: 7, date: "11/9/2026", mvp: "Simon Uche (MonStars), 26 pts 3 rebs 2 stls", games: [
+        ["7:00 PM", "K1 MASHERS", 52, "YUNG HOOPAS", 63],
+        ["8:00 PM", "Sniper Elite!", 58, "Lago Boys", 49],
+        ["9:00 PM", "Xiao Long Ballers", 48, "MonStars", 72],
+      ]},
+      { week: 8, date: "11/16/2026", mvp: null, games: [
+        ["7:00 PM", "Xiao Long Ballers", null, "YUNG HOOPAS", null],
+        ["8:00 PM", "Sniper Elite!", null, "MonStars", null],
+        ["9:00 PM", "Lago Boys", null, "K1 MASHERS", null],
+      ]},
+    ];
+
+    function gameHTML([time, team1, score1, team2, score2]) {
+      // Not played yet: plain black "Team vs Team"
+      if (score1 === null || score2 === null) {
+        return `<div class="game">
+          <div class="game-time">${time}</div>
+          <div class="game-row"><span>${team1} vs ${team2}</span></div>
+        </div>`;
+      }
+      // Played: winner green, loser red (a tie stays black)
+      const class1 = score1 > score2 ? "win" : score1 < score2 ? "lose" : "";
+      const class2 = score2 > score1 ? "win" : score2 < score1 ? "lose" : "";
+      return `<div class="game">
+        <div class="game-time">${time}</div>
+        <div class="game-row ${class1}"><span>${team1}</span><span class="score">${score1}</span></div>
+        <div class="game-row ${class2}"><span>${team2}</span><span class="score">${score2}</span></div>
+      </div>`;
+    }
+
+    document.getElementById("schedule-weeks").innerHTML = schedule.map((w) => `
+      <div class="sched-week">
+        <h2>Week ${w.week} · ${w.date}</h2>
+        ${w.mvp ? `<p class="sched-mvp">MVP: ${w.mvp}</p>` : `<p class="sched-pending">No scores posted yet</p>`}
+        ${w.games.map(gameHTML).join("")}
+      </div>`).join("");
   </script>
 </body>
 </html>
