@@ -1022,5 +1022,8 @@
     document.getElementById("standings-rows").innerHTML = standings.rows.map((t, i) => `
       <tr><td>${i + 1}</td><td class="team">${t.name}</td><td>${t.w}</td><td>${t.l}</td><td>${t.ff}</td><td>${t.pf}</td><td>${t.pa}</td><td>${diffText(t.pf - t.pa)}</td></tr>`).join("");
   </script>
+
+  <!-- Home page fireworks (all the code is in fireworks.js). To remove, delete this line and that file. -->
+  <script src="fireworks.js"></script>
 </body>
 </html>
