@@ -465,19 +465,13 @@
   <section id="schedule" hidden>
     <h1>Schedule</h1>
     <div class="standings">
-      <h2>Standings (after Week 7)</h2>
+      <!-- The JavaScript below fills in the heading and rows from the game scores -->
+      <h2 id="standings-title">Standings</h2>
       <table>
         <thead>
           <tr><th>Rank</th><th class="team">Team</th><th>W</th><th>L</th><th>Points For</th><th>Points Against</th></tr>
         </thead>
-        <tbody>
-          <tr><td>1</td><td class="team">Sniper Elite!</td><td>6</td><td>1</td><td>444</td><td>341</td></tr>
-          <tr><td>2</td><td class="team">Lago Boys</td><td>6</td><td>1</td><td>471</td><td>415</td></tr>
-          <tr><td>3</td><td class="team">MonStars</td><td>5</td><td>2</td><td>444</td><td>395</td></tr>
-          <tr><td>4</td><td class="team">YUNG HOOPAS</td><td>3</td><td>4</td><td>380</td><td>392</td></tr>
-          <tr><td>5</td><td class="team">Xiao Long Ballers</td><td>1</td><td>6</td><td>353</td><td>424</td></tr>
-          <tr><td>6</td><td class="team">K1 MASHERS</td><td>0</td><td>7</td><td>325</td><td>450</td></tr>
-        </tbody>
+        <tbody id="standings-rows"></tbody>
       </table>
     </div>
     <p class="sched-info">Fall 2026 · Mondays</p>
@@ -826,6 +820,41 @@
         ${w.mvp ? `<p class="sched-mvp">MVP: ${w.mvp}</p>` : `<p class="sched-pending">No scores posted yet</p>`}
         ${w.games.map(gameHTML).join("")}
       </div>`).join("");
+
+    // ---------- Standings (worked out from the schedule above) ----------
+    //
+    // Adds up every game that has scores. Ranked by wins; if two teams have
+    // the same wins, the one with the bigger point difference (for minus against) goes first.
+    function computeStandings(weeks) {
+      const teams = {};
+      const team = (name) => (teams[name] ??= { name, w: 0, l: 0, pf: 0, pa: 0 });
+      let lastWeek = 0;
+
+      for (const w of weeks) {
+        for (const [, team1, score1, team2, score2] of w.games) {
+          // Make sure every team shows up, even before it has played
+          const t1 = team(team1);
+          const t2 = team(team2);
+          if (score1 === null || score2 === null) continue; // not played yet
+          lastWeek = Math.max(lastWeek, w.week);
+          t1.pf += score1; t1.pa += score2;
+          t2.pf += score2; t2.pa += score1;
+          if (score1 > score2) { t1.w++; t2.l++; }
+          else if (score2 > score1) { t2.w++; t1.l++; }
+        }
+      }
+
+      const rows = Object.values(teams).sort(
+        (a, b) => b.w - a.w || (b.pf - b.pa) - (a.pf - a.pa)
+      );
+      return { rows, lastWeek };
+    }
+
+    const standings = computeStandings(schedule);
+    document.getElementById("standings-title").textContent =
+      standings.lastWeek ? `Standings (after Week ${standings.lastWeek})` : "Standings";
+    document.getElementById("standings-rows").innerHTML = standings.rows.map((t, i) => `
+      <tr><td>${i + 1}</td><td class="team">${t.name}</td><td>${t.w}</td><td>${t.l}</td><td>${t.pf}</td><td>${t.pa}</td></tr>`).join("");
   </script>
 </body>
 </html>
