@@ -335,10 +335,22 @@
 
   <!-- Page 2: Season Leaders -->
   <section id="season" hidden>
-    <h1>Season Leaders</h1>
-    <p class="subtitle">Top 5 per game · Fall 2026</p>
-    <!-- The JavaScript below fills this empty box with leader cards -->
-    <div id="leaders" class="leaders-grid"></div>
+    <!-- View 1: the top-five cards -->
+    <div id="season-cards">
+      <h1>Season Leaders</h1>
+      <p class="subtitle">Top 5 per game · Fall 2026 · Tap a card for the full list</p>
+      <!-- The JavaScript below fills this empty box with leader cards -->
+      <div id="leaders" class="leaders-grid"></div>
+    </div>
+
+    <!-- View 2: the full ranked list for one category (filled in on tap) -->
+    <div id="season-full" hidden>
+      <button class="back-button" id="season-back" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>
+        Back
+      </button>
+      <div class="card full-list" id="season-full-card"></div>
+    </div>
   </section>
 
   <!-- Page 3: All-Time Leaders -->
@@ -399,6 +411,8 @@
       document.body.classList.toggle("on-home", pageId === "home");
       // Opening All-Time Leaders always starts on the cards, not a full list
       if (pageId === "alltime") showAllTimeCards();
+      // Same for Season Leaders
+      if (pageId === "season") showSeasonCards();
       window.scrollTo(0, 0); // start each page at the top
     }
 
@@ -517,9 +531,39 @@
       { title: "3-Pointers",   stat: "threes", per: "game" },
       { title: "Free Throw %", stat: "ft",     minFta: 9 },
     ];
-    buildLeaders("leaders",
-      seasonCategories.map(c => rankCategory(players, c)),
-      seasonCategories, 5);
+    // Rank each category once; cards and full lists both use these
+    const seasonRanked = seasonCategories.map(c => rankCategory(players, c));
+
+    const seasonCardsView = document.getElementById("season-cards");
+    const seasonFullView = document.getElementById("season-full");
+    const seasonFullCard = document.getElementById("season-full-card");
+    let seasonSavedScroll = 0; // where the cards were scrolled to, for Back
+
+    // Show the full ranked list for one category
+    function showSeasonFull(index) {
+      seasonSavedScroll = window.scrollY;
+      const category = seasonCategories[index];
+      seasonFullCard.innerHTML = `
+        <h2>${category.title}</h2>
+        <ol>${rowsHTML(seasonRanked[index], category)}</ol>
+        ${noteHTML(category)}`;
+      seasonCardsView.hidden = true;
+      seasonFullView.hidden = false;
+      window.scrollTo(0, 0);
+    }
+
+    // Go back to the top-five cards
+    function showSeasonCards() {
+      seasonFullView.hidden = true;
+      seasonCardsView.hidden = false;
+    }
+
+    document.getElementById("season-back").addEventListener("click", () => {
+      showSeasonCards();
+      window.scrollTo(0, seasonSavedScroll); // back to where you were
+    });
+
+    buildLeaders("leaders", seasonRanked, seasonCategories, 5, showSeasonFull);
 
     // ---------- Part 4: All-Time Leaders (top 10 + full lists) ----------
     // Per-game lists only count players with at least this many games
