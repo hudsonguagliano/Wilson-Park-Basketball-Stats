@@ -114,3 +114,19 @@ const allTimePlayers = [
   { name: "Ryan Simpson",       gp: 8,  pts: 64,  threes: 6,  ftm: 17, fta: 29, reb: 28,  stl: 4,  blk: 1 },
   { name: "Michael Montoya",    gp: 9,  pts: 63,  threes: 3,  ftm: 8,  fta: 15, reb: 77,  stl: 12, blk: 9 },
 ];
+
+// =============================================================
+//  LEAGUE AWARDS  (the "League Awards" card on All-Time Leaders)
+// =============================================================
+//  One line per player, shown in this order (top = first).
+//  "awards" is the list of honors shown for that player.
+//  To ADD a player, copy one whole line and change it.
+// =============================================================
+
+const leagueAwards = [
+  { name: "Hudson Guagliano", awards: ["5× League MVP", "4× Champion", "9× Week MVP", "All-Time Points Leader", "Points Per Game Leader"] },
+  { name: "Sasoon Abramian",  awards: ["2× League MVP", "2× Week MVP", "All-Time Rebounds Per Game Leader"] },
+  { name: "Sonnee Wilson",    awards: ["All-Time 3-Pointers Leader"] },
+  { name: "Jeff Hector",      awards: ["4× Champion", "2× League MVP", "All-Time Steals Leader"] },
+  { name: "Toine Bett",       awards: ["All-Time Blocks Leader", "1× Champion"] },
+];

@@ -246,6 +246,29 @@
       overflow-wrap: anywhere;
     }
 
+    /* ---- League Awards ---- */
+    .award-list li {
+      align-items: flex-start;
+    }
+    .award-list .who {
+      min-width: 0;
+      font-weight: bold;
+    }
+    .award-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      font-weight: normal;
+    }
+    .award-chip {
+      font-size: 0.78rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #fff1e6;
+      color: #9a3412;
+    }
+
     /* ---- Tab bar along the bottom ---- */
     .tab-bar {
       position: fixed;
@@ -520,14 +543,40 @@
     const allTimeFullCard = document.getElementById("alltime-full-card");
     let savedScroll = 0; // where the cards were scrolled to, for Back
 
-    // Show the full ranked list for one category
+    // The League Awards card comes right after the stat categories
+    const AWARDS_INDEX = allTimeCategories.length;
+
+    // The <li> rows for League Awards: name, then one chip per award.
+    // maxChips limits how many show on the small card (the rest become "+N more").
+    function awardRowsHTML(maxChips) {
+      let html = "";
+      for (const entry of leagueAwards) {
+        const shown = entry.awards.slice(0, maxChips);
+        const extra = entry.awards.length - shown.length;
+        let chips = shown.map(a => `<span class="award-chip">${a}</span>`).join("");
+        if (extra > 0) chips += `<span class="award-chip">+${extra} more</span>`;
+        html += `
+          <li>
+            <span class="who">${entry.name}<span class="award-chips">${chips}</span></span>
+          </li>`;
+      }
+      return html;
+    }
+
+    // Show the full ranked list for one category (or every award)
     function showAllTimeFull(index) {
-      const category = allTimeCategories[index];
       savedScroll = window.scrollY;
-      allTimeFullCard.innerHTML = `
-        <h2>${category.title}</h2>
-        <ol>${rowsHTML(allTimeRanked[index], category)}</ol>
-        ${noteHTML(category)}`;
+      if (index === AWARDS_INDEX) {
+        allTimeFullCard.innerHTML = `
+          <h2>League Awards</h2>
+          <ol class="award-list">${awardRowsHTML(Infinity)}</ol>`;
+      } else {
+        const category = allTimeCategories[index];
+        allTimeFullCard.innerHTML = `
+          <h2>${category.title}</h2>
+          <ol>${rowsHTML(allTimeRanked[index], category)}</ol>
+          ${noteHTML(category)}`;
+      }
       allTimeCardsView.hidden = true;
       allTimeFullView.hidden = false;
       window.scrollTo(0, 0);
@@ -545,6 +594,13 @@
     });
 
     buildLeaders("alltime-leaders", allTimeRanked, allTimeCategories, 10, showAllTimeFull);
+
+    // Add the League Awards card as the last (9th) card, so the grid is full
+    document.getElementById("alltime-leaders").innerHTML += `
+      <div class="card card-tap" role="button" tabindex="0" data-index="${AWARDS_INDEX}" aria-label="League Awards: see all awards">
+        <h2>League Awards${ARROW_SVG}</h2>
+        <ol class="award-list">${awardRowsHTML(3)}</ol>
+      </div>`;
   </script>
 </body>
 </html>
