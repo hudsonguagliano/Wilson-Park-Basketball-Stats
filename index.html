@@ -340,7 +340,7 @@
     }
     .col-gp { width: 26px; }
     .col-num { width: 48px; }
-    .col-att { width: 60px; }
+    .col-att { width: 68px; } /* fits "62 for 83" */
     .col-main { width: 64px; }
     .detail-list .value {
       font-size: 1.1rem;
@@ -851,14 +851,22 @@
     // Per-game lists only count players with at least this many games
     const ALLTIME_MIN_GP = 10;
 
+    // Extra columns for the full lists (same idea as Season Leaders)
+    const POINTS_COLUMN = { label: "Points", cls: "col-num", show: p => p.pts };
+    const PPG_COLUMN = { label: "PPG", cls: "col-num", show: p => (p.pts / p.gp).toFixed(1) };
+    const ATTEMPTS_COLUMN = { label: "Attempts", cls: "col-att", show: p => `${p.ftm} for ${p.fta}` };
+
     const allTimeCategories = [
-      { title: "Points",              stat: "pts",    per: "total" },
-      { title: "Points Per Game",     stat: "pts",    per: "game", minGp: ALLTIME_MIN_GP },
+      { title: "Points",              stat: "pts",    per: "total",
+        details: [GP_COLUMN, PPG_COLUMN], valueLabel: "Points" },
+      { title: "Points Per Game",     stat: "pts",    per: "game", minGp: ALLTIME_MIN_GP,
+        details: [GP_COLUMN, POINTS_COLUMN], valueLabel: "PPG" },
       { title: "Rebounds",            stat: "reb",    per: "total" },
       { title: "Rebounds Per Game",   stat: "reb",    per: "game", minGp: ALLTIME_MIN_GP },
       { title: "3-Pointers Made",     stat: "threes", per: "total" },
       { title: "3-Pointers Per Game", stat: "threes", per: "game", minGp: ALLTIME_MIN_GP },
-      { title: "Free Throw %",        stat: "ft",     minFta: 10 },
+      { title: "Free Throw %",        stat: "ft",     minFta: 10,
+        details: [GP_COLUMN, ATTEMPTS_COLUMN], valueLabel: "FT%" },
       { title: "Steals + Blocks",     stat: "stocks", per: "total" },
     ];
     // Rank each category once; cards and full lists both use these
@@ -900,7 +908,7 @@
         const category = allTimeCategories[index];
         allTimeFullCard.innerHTML = `
           <h2>${category.title}</h2>
-          <ol>${rowsHTML(allTimeRanked[index], category)}</ol>
+          ${fullListHTML(allTimeRanked[index], category)}
           ${noteHTML(category)}`;
       }
       allTimeCardsView.hidden = true;
