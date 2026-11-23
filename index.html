@@ -319,6 +319,33 @@
       overflow-wrap: anywhere;
     }
 
+    /* Extra columns (GP, totals, attempts) on some full Season lists */
+    .col-heads {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 0 6px;
+      border-bottom: 1px solid var(--divider);
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--muted);
+    }
+    .detail-list li {
+      gap: 8px;
+    }
+    .col {
+      flex: none;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .col-gp { width: 26px; }
+    .col-num { width: 48px; }
+    .col-att { width: 60px; }
+    .col-main { width: 64px; }
+    .detail-list .value {
+      font-size: 1.1rem;
+    }
+
     /* ---- League Awards ---- */
     .award-list li {
       align-items: flex-start;
@@ -689,18 +716,40 @@
       return rows;
     }
 
-    // The <li> rows for a list (rank, name, number)
-    function rowsHTML(rows, category) {
+    // The <li> rows for a list (rank, name, number).
+    // withDetails = true adds the category's extra columns (full lists only).
+    function rowsHTML(rows, category, withDetails = false) {
+      const details = withDetails && category.details ? category.details : [];
       let html = "";
       rows.forEach((row, i) => {
+        const extra = details
+          .map(d => `<span class="col ${d.cls}">${d.show(row.player)}</span>`)
+          .join("");
         html += `
           <li>
             <span class="rank">${i + 1}</span>
             <span class="who">${row.player.name}<span class="team">${row.player.team || ""}</span></span>
-            <span class="value">${formatValue(row.value, category)}</span>
+            ${extra}
+            <span class="value${details.length ? " col col-main" : ""}">${formatValue(row.value, category)}</span>
           </li>`;
       });
       return html;
+    }
+
+    // A full list, with column headings when the category has extra columns
+    function fullListHTML(rows, category) {
+      if (!category.details) return `<ol>${rowsHTML(rows, category)}</ol>`;
+      const heads = category.details
+        .map(d => `<span class="col ${d.cls}">${d.label}</span>`)
+        .join("");
+      return `
+        <div class="col-heads">
+          <span class="rank"></span>
+          <span class="who">Player</span>
+          ${heads}
+          <span class="col col-main">${category.valueLabel}</span>
+        </div>
+        <ol class="detail-list">${rowsHTML(rows, category, true)}</ol>`;
     }
 
     // The small note under a list explaining who qualifies
@@ -747,13 +796,22 @@
     }
 
     // ---------- Part 3: Season Leaders (top 5, per game) ----------
+    // Extra columns shown only on a category's full list (after tapping it):
+    //   details    = the columns: heading, width class, and what to show
+    //   valueLabel = heading for the main number on the right
+    const GP_COLUMN = { label: "GP", cls: "col-gp", show: p => p.gp };
+
     const seasonCategories = [
-      { title: "Points",       stat: "pts",    per: "game" },
+      { title: "Points",       stat: "pts",    per: "game",
+        details: [GP_COLUMN, { label: "Points", cls: "col-num", show: p => p.pts }],
+        valueLabel: "PPG" },
       { title: "Rebounds",     stat: "reb",    per: "game" },
       { title: "Steals",       stat: "stl",    per: "game" },
       { title: "Blocks",       stat: "blk",    per: "game" },
       { title: "3-Pointers",   stat: "threes", per: "game" },
-      { title: "Free Throw %", stat: "ft",     minFta: 10 },
+      { title: "Free Throw %", stat: "ft",     minFta: 10,
+        details: [GP_COLUMN, { label: "Attempts", cls: "col-att", show: p => `${p.ftm} for ${p.fta}` }],
+        valueLabel: "FT%" },
     ];
     // Rank each category once; cards and full lists both use these
     const seasonRanked = seasonCategories.map(c => rankCategory(players, c));
@@ -769,7 +827,7 @@
       const category = seasonCategories[index];
       seasonFullCard.innerHTML = `
         <h2>${category.title}</h2>
-        <ol>${rowsHTML(seasonRanked[index], category)}</ol>
+        ${fullListHTML(seasonRanked[index], category)}
         ${noteHTML(category)}`;
       seasonCardsView.hidden = true;
       seasonFullView.hidden = false;
