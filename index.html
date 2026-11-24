@@ -425,6 +425,18 @@
     .game-row .score {
       flex: none;
     }
+    /* Small note next to a score, like "(Eliminated)" */
+    .game-row .right {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      min-width: 0;
+      text-align: right;
+    }
+    .game-note {
+      font-size: 0.7rem;
+      font-weight: normal;
+    }
     .game .win  { color: var(--win); }  /* green */
     .game .lose { color: var(--lose); } /* red */
 
@@ -991,8 +1003,11 @@
     const playoffs = [
       { round: "Quarterfinals", date: "11/23/2026",
         note: "First-round byes: #1 Lago Boys, #2 Sniper Elite!", games: [
-        ["7:00 PM", "#3 MonStars", 88, "#6 K1 MASHERS", 73],
-        ["8:00 PM", "#4 YUNG HOOPAS", 59, "#5 Xiao Long Ballers", 54],
+        // Last item = small notes shown next to each team's score
+        ["7:00 PM", "#3 MonStars", 88, "#6 K1 MASHERS", 73, null,
+          ["Advanced to semifinals vs #2 Sniper Elite!", "Eliminated"]],
+        ["8:00 PM", "#4 YUNG HOOPAS", 59, "#5 Xiao Long Ballers", 54, null,
+          ["Advanced to semifinals vs #1 Lago Boys", "Eliminated"]],
       ]},
       { round: "Semifinals", date: "11/30/2026", note: null, games: [
         ["7:00 PM", "#1 Lago Boys", null, "#4 YUNG HOOPAS", null],
@@ -1004,7 +1019,7 @@
       ]},
     ];
 
-    function gameHTML([time, team1, score1, team2, score2, result]) {
+    function gameHTML([time, team1, score1, team2, score2, result, notes]) {
       // Not played yet: plain black "Team vs Team"
       if (score1 === null || score2 === null) {
         return `<div class="game">
@@ -1026,10 +1041,15 @@
       // Played: winner green, loser red (a tie stays black)
       const class1 = score1 > score2 ? "win" : score1 < score2 ? "lose" : "";
       const class2 = score2 > score1 ? "win" : score2 < score1 ? "lose" : "";
+      // Score on the right, with an optional small note before it
+      const right = (score, note) => note
+        ? `<span class="right"><span class="game-note">(${note})</span><span class="score">${score}</span></span>`
+        : `<span class="score">${score}</span>`;
+      const [note1, note2] = notes || [];
       return `<div class="game">
         <div class="game-time">${time}</div>
-        <div class="game-row ${class1}"><span>${team1}</span><span class="score">${score1}</span></div>
-        <div class="game-row ${class2}"><span>${team2}</span><span class="score">${score2}</span></div>
+        <div class="game-row ${class1}"><span>${team1}</span>${right(score1, note1)}</div>
+        <div class="game-row ${class2}"><span>${team2}</span>${right(score2, note2)}</div>
       </div>`;
     }
 
