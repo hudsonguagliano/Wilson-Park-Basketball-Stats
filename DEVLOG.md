@@ -71,7 +71,7 @@ Status page: https://stats.uptimerobot.com/iy0B58ROxM
 ### Features shipped (PRs #12–#15)
 - Added quarterfinal scores (team stats only; player stats aren't tracked in playoffs)
 - Set semifinal matchups for 11/30
-- Added "Advanced / Out" notes to playoff games. The long version wrapped badly on my phone in the Vercel preview, so I shortened it before merging.
+- Added 'Advanced / Eliminated' notes to playoff games
 - Added team records next to team names
 
 ### Infrastructure (Jim's Week 3: "understand what the host does")
