@@ -437,6 +437,11 @@
       font-size: 0.7rem;
       font-weight: normal;
     }
+    /* A team's record right after its name, like "MonStars  (1-0)" */
+    .game-record {
+      margin-left: 8px;
+      white-space: nowrap;
+    }
     .game .win  { color: var(--win); }  /* green */
     .game .lose { color: var(--lose); } /* red */
 
@@ -1022,11 +1027,13 @@
     // records (optional) = each team's record after this game, like ["1-0", "0-1"]
     function gameHTML([time, team1, score1, team2, score2, result, notes], records) {
       const [rec1, rec2] = records || [];
-      // The right side of a row: optional small note, the score, optional record
-      const right = (score, note, rec) => {
-        if (!note && !rec) return `<span class="score">${score}</span>`;
-        return `<span class="right">${note ? `<span class="game-note">(${note})</span>` : ""}<span class="score">${score}</span>${rec ? `<span class="score">(${rec})</span>` : ""}</span>`;
-      };
+      // The left side of a row: team name, then its record if given
+      const name = (team, rec) =>
+        `<span>${team}${rec ? `<span class="game-record">(${rec})</span>` : ""}</span>`;
+      // The right side of a row: optional small note, then the score
+      const right = (score, note) => note
+        ? `<span class="right"><span class="game-note">(${note})</span><span class="score">${score}</span></span>`
+        : `<span class="score">${score}</span>`;
 
       // Not played yet: plain black "Team vs Team"
       if (score1 === null || score2 === null) {
@@ -1042,8 +1049,8 @@
         const mark = (cls) => cls === "win" ? "W" : "FF";
         return `<div class="game">
           <div class="game-time">${time} · Forfeit (recorded 2-0)</div>
-          <div class="game-row ${class1}"><span>${team1}</span>${right(mark(class1), null, rec1)}</div>
-          <div class="game-row ${class2}"><span>${team2}</span>${right(mark(class2), null, rec2)}</div>
+          <div class="game-row ${class1}">${name(team1, rec1)}${right(mark(class1))}</div>
+          <div class="game-row ${class2}">${name(team2, rec2)}${right(mark(class2))}</div>
         </div>`;
       }
       // Played: winner green, loser red (a tie stays black)
@@ -1052,8 +1059,8 @@
       const [note1, note2] = notes || [];
       return `<div class="game">
         <div class="game-time">${time}</div>
-        <div class="game-row ${class1}"><span>${team1}</span>${right(score1, note1, rec1)}</div>
-        <div class="game-row ${class2}"><span>${team2}</span>${right(score2, note2, rec2)}</div>
+        <div class="game-row ${class1}">${name(team1, rec1)}${right(score1, note1)}</div>
+        <div class="game-row ${class2}">${name(team2, rec2)}${right(score2, note2)}</div>
       </div>`;
     }
 
