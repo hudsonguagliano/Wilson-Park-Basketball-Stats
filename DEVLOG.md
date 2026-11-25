@@ -62,3 +62,33 @@ that's broken.
   mismatch.
 - To get good results from Claude, I have to be specific about what I
   want, where it goes, and how I'll know it worked.
+
+## Week 3 — Day 2 (Tue 11/24)
+
+Live site: https://wilson-park-basketball-stats.vercel.app
+Status page: https://stats.uptimerobot.com/iy0B58ROxM
+
+### Features shipped (PRs #12–#15)
+- Added quarterfinal scores (team stats only; player stats aren't tracked in playoffs)
+- Set semifinal matchups for 11/30
+- Added "Advanced / Out" notes to playoff games. The long version wrapped badly on my phone in the Vercel preview, so I shortened it before merging.
+- Added team records next to team names
+
+### Infrastructure (Jim's Week 3: "understand what the host does")
+- Found my site was being published twice (Vercel AND GitHub Pages). Turned off GitHub Pages so there's one link.
+- Added a hosting note to CLAUDE.md so Claude Code knows Vercel is the live site (PR #16)
+- Read the Vercel build logs: clones my code from GitHub, "builds" in 27ms (plain HTML, nothing to compile), copies it to the CDN. Whole deploy takes about 2 seconds.
+- Found where rollback lives: every deploy is saved and can be restored in one click
+- Turned on Vercel Web Analytics to count real visitors (PR #17)
+- Set up an UptimeRobot alert that emails me if the site goes down
+- In one 6-hour window: 101 requests, 0% error rate
+
+### What Vercel does for me
+Downloads my code from GitHub, builds it, and puts it on servers worldwide. It also keeps logs, stores secrets (environment variables), gives each PR a preview link, handles HTTPS, and saves every version for rollback. On AWS I'd set all of that up myself.
+
+### Week 3 checklist
+- [x] Automated tests (done Mon: 5 FT% tests, proved they catch bugs)
+- [x] Infrastructure
+- [ ] Watch users + top 3 complaints (Wed)
+- [ ] Data persistence (Wed)
+- [ ] Week 3 write-up (Wed)
