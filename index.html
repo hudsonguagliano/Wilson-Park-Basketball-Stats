@@ -445,6 +445,106 @@
     .game .win  { color: var(--win); }  /* green */
     .game .lose { color: var(--lose); } /* red */
 
+    /* ---- Playoff bracket (top of the Schedule tab) ---- */
+    .bracket-box {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin: 0 0 20px;
+      box-shadow: var(--card-shadow);
+    }
+    .bracket-box h2 {
+      font-size: 1.15rem;
+      margin: 0 0 8px;
+    }
+    /* Too wide for a phone? It scrolls sideways inside this box only */
+    .bracket-scroll {
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+    /* 3 rounds left to right. Rows: round names, then 4 equal-height rows,
+       so each next-round game sits exactly between the two games feeding it. */
+    .bracket {
+      --col-gap: 32px;
+      --row-gap: 10px;
+      display: grid;
+      grid-template-columns: 190px 190px 170px;
+      grid-template-rows: auto repeat(4, 1fr);
+      column-gap: var(--col-gap);
+      row-gap: var(--row-gap);
+      width: max-content;
+    }
+    .bk-round {
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .bk-slot {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .bk-game {
+      width: 100%;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      background: var(--bg);
+      font-size: 0.85rem;
+    }
+    .bk-time,
+    .bk-vs,
+    .bk-bye {
+      font-size: 0.7rem;
+      font-weight: normal;
+      color: var(--muted);
+    }
+    .bk-time {
+      margin-bottom: 2px;
+    }
+    .bk-team {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 2px 0;
+      font-weight: bold;
+    }
+    .bk-team.win { color: var(--win); }  /* winner: green */
+    .bk-team.out {                       /* eliminated: crossed out and faded */
+      text-decoration: line-through;
+      opacity: 0.45;
+    }
+    /* Connector lines: out of the right side of a game, joined to its partner,
+       and into the left side of the next-round game */
+    .bk-slot.feed-top::after,
+    .bk-slot.feed-bottom::after {
+      content: "";
+      position: absolute;
+      left: 100%;
+      width: calc(var(--col-gap) / 2);
+      border-right: 2px solid var(--muted);
+    }
+    .bk-slot.feed-top::after {
+      top: 50%;
+      bottom: calc(var(--row-gap) / -2);
+      border-top: 2px solid var(--muted);
+    }
+    .bk-slot.feed-bottom::after {
+      top: calc(var(--row-gap) / -2);
+      bottom: 50%;
+      border-bottom: 2px solid var(--muted);
+    }
+    .bk-slot.fed::before {
+      content: "";
+      position: absolute;
+      right: 100%;
+      top: 50%;
+      width: calc(var(--col-gap) / 2);
+      border-top: 2px solid var(--muted);
+    }
+
     /* Standings table at the top of the Schedule tab (plain text color) */
     .standings {
       background: var(--card);
@@ -601,6 +701,13 @@
 
   <!-- Page 4: Schedule -->
   <section id="schedule" hidden>
+    <!-- Playoff bracket. The JavaScript below draws it from the playoffs list. -->
+    <div class="bracket-box">
+      <h2>Playoffs</h2>
+      <div class="bracket-scroll">
+        <div class="bracket" id="playoff-bracket"></div>
+      </div>
+    </div>
     <div class="standings">
       <!-- The JavaScript below fills in the heading and rows from the game scores -->
       <h2 id="standings-title">Standings</h2>
@@ -616,9 +723,7 @@
     <p class="sched-info">Fall 2026 · Mondays</p>
     <p class="sched-info">Dee Hardison Sports Center, 2400 Jefferson St, Torrance</p>
     <p class="sched-updated">Last updated: 11/18/2026</p>
-    <!-- The JavaScript below fills these boxes with the playoff rounds and each week's games -->
-    <h2 class="sched-section">Playoffs</h2>
-    <div id="playoff-weeks"></div>
+    <!-- The JavaScript below fills this box with each week's games -->
     <h2 class="sched-section">Regular Season · Final</h2>
     <div id="schedule-weeks"></div>
   </section>
@@ -1064,12 +1169,79 @@
       </div>`;
     }
 
-    document.getElementById("playoff-weeks").innerHTML = playoffs.map((r) => `
-      <div class="sched-week">
-        <h2>${r.round} · ${r.date}</h2>
-        ${r.note ? `<p class="sched-pending">${r.note}</p>` : ""}
-        ${r.games.map(g => gameHTML(g)).join("")}
-      </div>`).join("");
+    // ---------- Playoff bracket (top of the Schedule tab) ----------
+    //
+    // Drawn from the playoffs list above, left to right.
+    //  - Each quarterfinal is placed next to the semifinal its winner plays in.
+    //  - A semifinal team that didn't play a quarterfinal had a first-round bye.
+    //  - The championship fills in its teams from the semifinal winners,
+    //    so adding the semifinal scores is all it takes.
+
+    // The winning team of a game, or null if it hasn't been played
+    function winnerOf([, team1, score1, team2, score2]) {
+      if (score1 === null || score2 === null || score1 === score2) return null;
+      return score1 > score2 ? team1 : team2;
+    }
+
+    // One game box: time, then both teams (with scores once it's played)
+    function bracketGameHTML([time, team1, score1, team2, score2]) {
+      const teamRow = (team, cls, score) =>
+        `<div class="bk-team ${cls}"><span>${team}</span>${score === null ? "" : `<span>${score}</span>`}</div>`;
+      if (score1 === null || score2 === null) {
+        return `<div class="bk-game"><div class="bk-time">${time}</div>
+          ${teamRow(team1, "", null)}<div class="bk-vs">vs</div>${teamRow(team2, "", null)}</div>`;
+      }
+      const cls = (mine, theirs) => mine > theirs ? "win" : mine < theirs ? "out" : "";
+      return `<div class="bk-game"><div class="bk-time">${time}</div>
+        ${teamRow(team1, cls(score1, score2), score1)}${teamRow(team2, cls(score2, score1), score2)}</div>`;
+    }
+
+    // A first-round bye: the team goes straight to the semifinals
+    function byeHTML(team) {
+      return `<div class="bk-game"><div class="bk-team"><span>${team}</span><span class="bk-bye">BYE</span></div></div>`;
+    }
+
+    function bracketHTML() {
+      const round = (name) => playoffs.find(r => r.round === name);
+      const qf = round("Quarterfinals");
+      const sf = round("Semifinals");
+      const final = round("Championship");
+
+      // One box in the grid. Row 1 is the round names; games use rows 2-5.
+      const slot = (col, row, span, cls, inner) =>
+        `<div class="bk-slot ${cls}" style="grid-column: ${col}; grid-row: ${row} / span ${span}">${inner}</div>`;
+
+      let html = [qf, sf, final].map((r, i) =>
+        `<div class="bk-round" style="grid-column: ${i + 1}; grid-row: 1">${r.round}<br>${r.date}</div>`).join("");
+
+      // Quarterfinals not yet matched to a semifinal (used for "TBD" spots)
+      const unplaced = [...qf.games];
+      sf.games.forEach((game, s) => {
+        // The two first-round boxes that lead into this semifinal
+        [game[1], game[3]].forEach((team, t) => {
+          const row = 2 + s * 2 + t;
+          const side = t === 0 ? "feed-top" : "feed-bottom";
+          let qfGame = unplaced.find(g => winnerOf(g) === team);
+          if (!qfGame && team === "TBD") qfGame = unplaced.find(g => !winnerOf(g));
+          if (qfGame) {
+            unplaced.splice(unplaced.indexOf(qfGame), 1);
+            html += slot(1, row, 1, side, bracketGameHTML(qfGame));
+          } else if (team !== "TBD") {
+            html += slot(1, row, 1, side, byeHTML(team));
+          }
+        });
+        html += slot(2, 2 + s * 2, 2, `fed ${s === 0 ? "feed-top" : "feed-bottom"}`, bracketGameHTML(game));
+      });
+
+      // Championship: TBD until each semifinal has a winner
+      const [time, team1, score1, team2, score2] = final.games[0];
+      const fromSemi = (team, semi) => team !== "TBD" ? team : (winnerOf(semi) ?? "TBD");
+      html += slot(3, 2, 4, "fed", bracketGameHTML(
+        [time, fromSemi(team1, sf.games[0]), score1, fromSemi(team2, sf.games[1]), score2]));
+      return html;
+    }
+
+    document.getElementById("playoff-bracket").innerHTML = bracketHTML();
 
     // Each team's regular-season record so far, updated game by game from
     // Week 1 on (a forfeit counts as a win/loss, same as the standings).
