@@ -445,6 +445,35 @@
     .game .win  { color: var(--win); }  /* green */
     .game .lose { color: var(--lose); } /* red */
 
+    /* ---- "Loading stats…" / "Couldn't load stats." message ---- */
+    .load-status {
+      grid-column: 1 / -1; /* full width inside the leader grids and the bracket */
+      color: var(--muted);
+      text-align: center;
+      padding: 24px 0;
+    }
+    .load-status p {
+      margin: 0 0 12px;
+    }
+    /* The bracket can be wider than a phone, so keep its message at the left */
+    .bracket .load-status {
+      text-align: left;
+    }
+    .bracket:has(> .load-status) {
+      display: block; /* no empty bracket rows under the message */
+    }
+    .retry-button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: var(--card);
+      box-shadow: var(--card-shadow);
+      font: inherit;
+      font-weight: bold;
+      color: var(--title-orange);
+      cursor: pointer;
+    }
+
     /* ---- Playoff bracket (top of the Schedule tab) ---- */
     .bracket-box {
       background: var(--card);
@@ -736,9 +765,10 @@
     <button data-page="schedule">Schedule</button>
   </nav>
 
-  <!-- Load the player data first (from players.js) -->
-  <script src="players.js"></script>
-  <script src="alltime.js"></script>
+  <!-- Stats come from Supabase: settings in config.js, loading in data.js.
+       (players.js, alltime.js and schedule-backup.js are backups and are NOT loaded.) -->
+  <script src="config.js"></script>
+  <script src="data.js"></script>
 
   <!-- ============ LOGIC ============ -->
   <script>
@@ -935,8 +965,8 @@
         details: [GP_COLUMN, { label: "Attempts", cls: "col-att", show: p => `${p.ftm} for ${p.fta}` }],
         valueLabel: "FT%" },
     ];
-    // Rank each category once; cards and full lists both use these
-    const seasonRanked = seasonCategories.map(c => rankCategory(players, c));
+    // Ranked once the stats load (in showStats); cards and full lists both use these
+    let seasonRanked = [];
 
     const seasonCardsView = document.getElementById("season-cards");
     const seasonFullView = document.getElementById("season-full");
@@ -967,8 +997,6 @@
       window.scrollTo(0, seasonSavedScroll); // back to where you were
     });
 
-    buildLeaders("leaders", seasonRanked, seasonCategories, 5, showSeasonFull);
-
     // ---------- Part 4: All-Time Leaders (top 10 + full lists) ----------
     // Per-game lists only count players with at least this many games
     const ALLTIME_MIN_GP = 10;
@@ -991,8 +1019,8 @@
         details: [GP_COLUMN, ATTEMPTS_COLUMN], valueLabel: "FT%" },
       { title: "Steals + Blocks",     stat: "stocks", per: "total" },
     ];
-    // Rank each category once; cards and full lists both use these
-    const allTimeRanked = allTimeCategories.map(c => rankCategory(allTimePlayers, c));
+    // Ranked once the stats load (in showStats); cards and full lists both use these
+    let allTimeRanked = [];
 
     const allTimeCardsView = document.getElementById("alltime-cards");
     const allTimeFullView = document.getElementById("alltime-full");
@@ -1049,85 +1077,21 @@
       window.scrollTo(0, savedScroll); // back to where you were
     });
 
-    buildLeaders("alltime-leaders", allTimeRanked, allTimeCategories, 10, showAllTimeFull);
-
-    // Add the League Awards card as the last (9th) card, so the grid is full
-    document.getElementById("alltime-leaders").innerHTML += `
+    // The League Awards card: the last (9th) card, so the grid is full
+    function awardsCardHTML() {
+      return `
       <div class="card card-tap" role="button" tabindex="0" data-index="${AWARDS_INDEX}" aria-label="League Awards: see all awards">
         <h2>League Awards${ARROW_SVG}</h2>
         <ol class="award-list">${awardRowsHTML(3)}</ol>
       </div>`;
+    }
 
     // ---------- Part 5: Schedule ----------
     //
-    // One entry per week. Each game is [time, team 1, score 1, team 2, score 2].
-    // Leave both scores as null until the game is played; it then shows as
-    // "Team vs Team". The winner (green) and loser (red) are worked out from the scores.
-    const schedule = [
-      { week: 1, date: "9/28/2026", mvp: "Dustin Gratto (MonStars), 20 pts 6 rebs", games: [
-        ["7:00 PM", "MonStars", 64, "Xiao Long Ballers", 44],
-        ["8:00 PM", "Sniper Elite!", 86, "K1 MASHERS", 45],
-        ["9:00 PM", "Lago Boys", 73, "YUNG HOOPAS", 57],
-      ]},
-      { week: 2, date: "10/5/2026", mvp: "Predrag Stevcic (Lago Boys), 16 pts 6 rebs 1 blk", games: [
-        ["7:00 PM", "Lago Boys", 65, "MonStars", 60],
-        ["8:00 PM", "Sniper Elite!", 59, "Xiao Long Ballers", 46],
-        ["9:00 PM", "YUNG HOOPAS", 64, "K1 MASHERS", 42],
-      ]},
-      { week: 3, date: "10/12/2026", mvp: "Bacari Green (MonStars), 26 pts 5 rebs", games: [
-        ["7:00 PM", "MonStars", 59, "K1 MASHERS", 56],
-        ["8:00 PM", "Sniper Elite!", 44, "YUNG HOOPAS", 41],
-        ["9:00 PM", "Lago Boys", 55, "Xiao Long Ballers", 49],
-      ]},
-      { week: 4, date: "10/19/2026", mvp: "Hudson Guagliano (Lago Boys), 30 pts 2 rebs", games: [
-        ["7:00 PM", "MonStars", 55, "YUNG HOOPAS", 52],
-        ["8:00 PM", "Sniper Elite!", 56, "Lago Boys", 60],
-        ["9:00 PM", "K1 MASHERS", 34, "Xiao Long Ballers", 35],
-      ]},
-      { week: 5, date: "10/26/2026", mvp: "Ben Sy (Sniper Elite!), 28 pts 3 rebs", games: [
-        ["7:00 PM", "Lago Boys", 78, "K1 MASHERS", 51],
-        ["8:00 PM", "MonStars", 55, "Sniper Elite!", 76],
-        ["9:00 PM", "Xiao Long Ballers", 47, "YUNG HOOPAS", 49],
-      ]},
-      { week: 6, date: "11/2/2026", mvp: "Nathan Dimacali (Lago Boys), 17 pts 17 rebs 2 stls", games: [
-        ["7:00 PM", "YUNG HOOPAS", 54, "MonStars", 79],
-        ["8:00 PM", "Sniper Elite!", 65, "K1 MASHERS", 45],
-        ["9:00 PM", "Xiao Long Ballers", 84, "Lago Boys", 91],
-      ]},
-      { week: 7, date: "11/9/2026", mvp: "Simon Uche (MonStars), 26 pts 3 rebs 2 stls", games: [
-        ["7:00 PM", "K1 MASHERS", 52, "YUNG HOOPAS", 63],
-        ["8:00 PM", "Sniper Elite!", 58, "Lago Boys", 49],
-        ["9:00 PM", "Xiao Long Ballers", 48, "MonStars", 72],
-      ]},
-      { week: 8, date: "11/16/2026", mvp: "Nathan Dimacali (Lago Boys), 34 pts 10 3PM 2 rebs 2 stls", games: [
-        // Forfeit: Xiao Long Ballers forfeited. The league records it as 2-0, which
-        // counts in the standings totals only. It is NOT real points, so leave it
-        // out of any averages or player stats.
-        ["7:00 PM", "Xiao Long Ballers", 0, "YUNG HOOPAS", 2, "forfeit"],
-        ["8:00 PM", "Sniper Elite!", 52, "MonStars", 59],
-        ["9:00 PM", "Lago Boys", 76, "K1 MASHERS", 57],
-      ]},
-    ];
-
-    // Playoffs. Same game format as above; "TBD" until the matchup is set.
-    const playoffs = [
-      { round: "Quarterfinals", date: "11/23/2026",
-        note: "First-round byes: #1 Lago Boys, #2 Sniper Elite!", games: [
-        // Last item = small notes shown next to each team's score
-        ["7:00 PM", "#3 MonStars", 88, "#6 K1 MASHERS", 73, null,
-          ["Advanced to semifinals vs #2 Sniper Elite!", "Eliminated"]],
-        ["8:00 PM", "#4 YUNG HOOPAS", 59, "#5 Xiao Long Ballers", 54, null,
-          ["Advanced to semifinals vs #1 Lago Boys", "Eliminated"]],
-      ]},
-      { round: "Semifinals", date: "11/30/2026", note: null, games: [
-        ["7:00 PM", "#1 Lago Boys", null, "#4 YUNG HOOPAS", null],
-        ["8:00 PM", "#2 Sniper Elite!", null, "#3 MonStars", null],
-      ]},
-      { round: "Championship", date: "11/30/2026",
-        note: "Winners of both semifinals", games: [
-        ["9:00 PM", "TBD", null, "TBD", null],
-      ]},
-    ];
+    // The weeks and playoff rounds (schedule, playoffs) come from Supabase; see data.js.
+    // Each game is [time, team 1, score 1, team 2, score 2, result, notes].
+    // Scores are null until the game is played; it then shows as "Team vs Team".
+    // The winner (green) and loser (red) are worked out from the scores.
 
     // records (optional) = each team's record after this game, like ["1-0", "0-1"]
     function gameHTML([time, team1, score1, team2, score2, result, notes], records) {
@@ -1241,8 +1205,6 @@
       return html;
     }
 
-    document.getElementById("playoff-bracket").innerHTML = bracketHTML();
-
     // Each team's regular-season record so far, updated game by game from
     // Week 1 on (a forfeit counts as a win/loss, same as the standings).
     const recordSoFar = {};
@@ -1254,12 +1216,14 @@
       return [`${r1.w}-${r1.l}`, `${r2.w}-${r2.l}`];
     }
 
-    document.getElementById("schedule-weeks").innerHTML = schedule.map((w) => `
+    function scheduleHTML() {
+      return schedule.map((w) => `
       <div class="sched-week">
         <h2>Week ${w.week} · ${w.date}</h2>
         ${w.mvp ? `<p class="sched-mvp">MVP: ${w.mvp}</p>` : `<p class="sched-pending">No scores posted yet</p>`}
         ${w.games.map(g => gameHTML(g, recordsAfter(g))).join("")}
       </div>`).join("");
+    }
 
     // ---------- Standings (worked out from the schedule above) ----------
     //
@@ -1292,15 +1256,68 @@
       return { rows, lastWeek };
     }
 
-    const standings = computeStandings(schedule);
     // The regular season is over (8 weeks), so the title says "Final"
     const REGULAR_SEASON_WEEKS = 8;
-    document.getElementById("standings-title").textContent =
-      standings.lastWeek >= REGULAR_SEASON_WEEKS ? "Final Regular-Season Standings"
-      : standings.lastWeek ? `Standings (after Week ${standings.lastWeek})` : "Standings";
     const diffText = (d) => d > 0 ? `+${d}` : String(d);
-    document.getElementById("standings-rows").innerHTML = standings.rows.map((t, i) => `
+
+    function showStandings() {
+      const standings = computeStandings(schedule);
+      document.getElementById("standings-title").textContent =
+        standings.lastWeek >= REGULAR_SEASON_WEEKS ? "Final Regular-Season Standings"
+        : standings.lastWeek ? `Standings (after Week ${standings.lastWeek})` : "Standings";
+      document.getElementById("standings-rows").innerHTML = standings.rows.map((t, i) => `
       <tr><td>${i + 1}</td><td class="team">${t.name}</td><td>${t.w}</td><td>${t.l}</td><td>${t.ff}</td><td>${t.pf}</td><td>${t.pa}</td><td>${diffText(t.pf - t.pa)}</td></tr>`).join("");
+    }
+
+    // ---------- Part 6: load the stats from Supabase, then draw them ----------
+
+    // The boxes that show stats (and the loading / error message until then)
+    const STAT_BOXES = ["leaders", "alltime-leaders", "playoff-bracket", "schedule-weeks"];
+
+    function showStatus(message, withRetry) {
+      for (const id of STAT_BOXES) {
+        document.getElementById(id).innerHTML = `
+          <div class="load-status">
+            <p>${message}</p>
+            ${withRetry ? `<button class="retry-button" type="button">Try again</button>` : ""}
+          </div>`;
+      }
+    }
+
+    // Draw every stat on the page (runs once, after the stats load)
+    function showStats() {
+      for (const id of STAT_BOXES) document.getElementById(id).innerHTML = "";
+
+      seasonRanked = seasonCategories.map(c => rankCategory(players, c));
+      buildLeaders("leaders", seasonRanked, seasonCategories, 5, showSeasonFull);
+
+      allTimeRanked = allTimeCategories.map(c => rankCategory(allTimePlayers, c));
+      buildLeaders("alltime-leaders", allTimeRanked, allTimeCategories, 10, showAllTimeFull);
+      document.getElementById("alltime-leaders").innerHTML += awardsCardHTML();
+
+      document.getElementById("playoff-bracket").innerHTML = bracketHTML();
+      document.getElementById("schedule-weeks").innerHTML = scheduleHTML();
+      showStandings();
+    }
+
+    async function loadAndShowStats() {
+      showStatus("Loading stats…", false);
+      try {
+        await loadStats();
+      } catch (error) {
+        console.error(error);
+        showStatus("Couldn't load stats.", true);
+        return;
+      }
+      showStats();
+    }
+
+    // "Try again" on the error message
+    document.addEventListener("click", (e) => {
+      if (e.target.closest(".retry-button")) loadAndShowStats();
+    });
+
+    loadAndShowStats();
   </script>
 
   <!-- Home page fireworks (all the code is in fireworks.js). To remove, delete this line and that file. -->
