@@ -1019,7 +1019,15 @@
       ]},
     ];
 
-    function gameHTML([time, team1, score1, team2, score2, result, notes]) {
+    // records (optional) = each team's record after this game, like ["1-0", "0-1"]
+    function gameHTML([time, team1, score1, team2, score2, result, notes], records) {
+      const [rec1, rec2] = records || [];
+      // The right side of a row: optional small note, the score, optional record
+      const right = (score, note, rec) => {
+        if (!note && !rec) return `<span class="score">${score}</span>`;
+        return `<span class="right">${note ? `<span class="game-note">(${note})</span>` : ""}<span class="score">${score}</span>${rec ? `<span class="score">(${rec})</span>` : ""}</span>`;
+      };
+
       // Not played yet: plain black "Team vs Team"
       if (score1 === null || score2 === null) {
         return `<div class="game">
@@ -1034,22 +1042,18 @@
         const mark = (cls) => cls === "win" ? "W" : "FF";
         return `<div class="game">
           <div class="game-time">${time} · Forfeit (recorded 2-0)</div>
-          <div class="game-row ${class1}"><span>${team1}</span><span class="score">${mark(class1)}</span></div>
-          <div class="game-row ${class2}"><span>${team2}</span><span class="score">${mark(class2)}</span></div>
+          <div class="game-row ${class1}"><span>${team1}</span>${right(mark(class1), null, rec1)}</div>
+          <div class="game-row ${class2}"><span>${team2}</span>${right(mark(class2), null, rec2)}</div>
         </div>`;
       }
       // Played: winner green, loser red (a tie stays black)
       const class1 = score1 > score2 ? "win" : score1 < score2 ? "lose" : "";
       const class2 = score2 > score1 ? "win" : score2 < score1 ? "lose" : "";
-      // Score on the right, with an optional small note before it
-      const right = (score, note) => note
-        ? `<span class="right"><span class="game-note">(${note})</span><span class="score">${score}</span></span>`
-        : `<span class="score">${score}</span>`;
       const [note1, note2] = notes || [];
       return `<div class="game">
         <div class="game-time">${time}</div>
-        <div class="game-row ${class1}"><span>${team1}</span>${right(score1, note1)}</div>
-        <div class="game-row ${class2}"><span>${team2}</span>${right(score2, note2)}</div>
+        <div class="game-row ${class1}"><span>${team1}</span>${right(score1, note1, rec1)}</div>
+        <div class="game-row ${class2}"><span>${team2}</span>${right(score2, note2, rec2)}</div>
       </div>`;
     }
 
@@ -1057,14 +1061,25 @@
       <div class="sched-week">
         <h2>${r.round} · ${r.date}</h2>
         ${r.note ? `<p class="sched-pending">${r.note}</p>` : ""}
-        ${r.games.map(gameHTML).join("")}
+        ${r.games.map(g => gameHTML(g)).join("")}
       </div>`).join("");
+
+    // Each team's regular-season record so far, updated game by game from
+    // Week 1 on (a forfeit counts as a win/loss, same as the standings).
+    const recordSoFar = {};
+    function recordsAfter([, team1, score1, team2, score2]) {
+      if (score1 === null || score2 === null || score1 === score2) return null;
+      const r1 = (recordSoFar[team1] ??= { w: 0, l: 0 });
+      const r2 = (recordSoFar[team2] ??= { w: 0, l: 0 });
+      if (score1 > score2) { r1.w++; r2.l++; } else { r2.w++; r1.l++; }
+      return [`${r1.w}-${r1.l}`, `${r2.w}-${r2.l}`];
+    }
 
     document.getElementById("schedule-weeks").innerHTML = schedule.map((w) => `
       <div class="sched-week">
         <h2>Week ${w.week} · ${w.date}</h2>
         ${w.mvp ? `<p class="sched-mvp">MVP: ${w.mvp}</p>` : `<p class="sched-pending">No scores posted yet</p>`}
-        ${w.games.map(gameHTML).join("")}
+        ${w.games.map(g => gameHTML(g, recordsAfter(g))).join("")}
       </div>`).join("");
 
     // ---------- Standings (worked out from the schedule above) ----------
